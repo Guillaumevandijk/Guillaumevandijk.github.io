@@ -1,103 +1,66 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
 
-
+        .slider-container {
+            width: 300px;
+            text-align: center;
+        }
+        .slider-value {
+            margin-top: 10px;
+        }
+    </style>
+</head>
 <body>
+<h1>Navigeer scrippie</h1>
+Kleine mvp om naar je eigen locatie te navigeren met Navionics.<br>
+Werkt alleen (nog) op noordelijk/oostelijk halfrond. Dus vanaf Londen naar rechts en evenaar omhoog anders gaat ie gek doen. <br>
+Onderaan kan je de zoom aanpassen.
+<h2>Navigeer naar eigen coordinaten (main act, de rest is bijzaak)</h2>
+<button onclick="main()">NAVIGEER</button>
 
 
+<h2>Klik om je eigen coordinaten te checken</h2>
+<button onclick="getLocation()">KLIK</button>
+
+<p id="demo"></p>
+
+<h2>Navigeer naar andere coordinaten</h2>
 
 
+<input type="text" id="myLat" placeholder="Enter latitude">
+<input type="text" id="myLon" placeholder="Enter longitude">
+<button onclick="test()">NAVIGEER</button>
 
 
-<!-- Dit is wat in html moet komen te staan met de juiste stijl-->
-<a href="#" onclick="main()">NAVIGEER</a>
+<p id="testOutput"></p>
+
+<h2>Een klassieker</h2>
+<button onclick="sukosan()">Sukosan</button>
 
 
+<h2>Zoom veranderen</h2>
+<p>1 = uitgezoomd, 15 = ingezoomd. 12 is standaard ingesteld</p>
+
+<div class="slider-container">
+    <label for="mySlider">Selecteer zoom: </label>
+    <input type="range" id="mySlider" min="1" max="15" value="12" oninput="updateValue(this.value)">
+    <div class="slider-value">
+        Huidige waarde: <span id="sliderValue">12</span>
+    </div>
+</div>
 
 
-
-<!-- Dit script kan je waar dan ook in je html pagina erbij zetten. Dit zorgt ervoor dat je locatie wordt opgevraagd en dat om wordt gezet in een navionics url -->
-<script>
-function main() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(navigate);
-  } else {
-    x.innerHTML = "Geolocation is not supported by this browser.";
-  }
-}
-
-<!-- brengt je naar de input coordinaten in navionics -->
-function navionics(lat,lon){
+<script type="text/javascript" src="functions.js"></script>
 
 
-  window.location.href = "https://webapp.navionics.com/#boating@13&key=" + encrypt(lat) + encrypt(lon)
-
-}
-  
-<!-- zet positie om in latitude en longitude -->
-function navigate(position){
-  let lat = position.coords.latitude
-  let lon = position.coords.longitude
-  navionics(lat,lon)
-  
-}
-
-<!-- Zet de input coordinate (longitude of latitude) om in een key die gebreukt wordt in de url -->
-function encrypt(coord){
-    let a = 6250
-    let b = -32768
-    let locbeta= coord*a+b
-
-    const ord_l = '_ a c e g i k m o q s u w y %7B %7D'.split(' ');
-    const ord_m = '_ %60 a b c d e f g h i j k l m n o p q r s t u v w x y z %7B %7C %7D ~'.split(' ');
-    const ord_h = '%40 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z %5B %5C %5D %5E'.split(' ');
-
-    let loc_work = locbeta;
-    let key = '';
-    const base = [32768, 1024, 32, 1, 0.0625];
-
-    let keypart_value = loc_work / base[0];
-
-    if (keypart_value>0){
-      key = ord_h[Math.floor(keypart_value)] + key;
-      loc_work = loc_work% base[0];
-    } else {
-      
-      loc_work = loc_work+base[0];
-    }
-   
-  
-  
-    for (let i = 0; i < 3; i++) {
-
-        keypart_value = loc_work / base[1 + i];
-        if (keypart_value>0){
-          key = ord_m[Math.floor(keypart_value)] + key;
-          loc_work = loc_work% base[1+i];
-        } else {
-          
-          loc_work = loc_work+base[1+i];
-        }
-        }
-    
-    if (keypart_value>0){
-      keypart_value = loc_work / base[4];
-      key = ord_l[Math.floor(keypart_value)] + key;
-    } else {
-      loc_work = loc_work+base[4]
-    }
-    
-    return key
-}
-
-
-<!-- navigeert naar sukosan als voorbeeld -->
-function sukosan() {
-  navionics(44.05159726430251, 15.301683811495284)
-}
-
-</script>
 
 
 </body>
+
+
 </html>
