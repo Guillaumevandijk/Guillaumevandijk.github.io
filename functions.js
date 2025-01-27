@@ -35,8 +35,8 @@ function main() {
 function navionics(lat,lon){
 
 
-  window.location.href = "https://webapp.navionics.com/#boating@"+sliderValue+"&key=" + encrypt(lat) + encrypt(lon)
-
+  //window.location.href = "https://webapp.navionics.com/#boating@"+sliderValue+"&key=" + encrypt(lat) + encrypt(lon)
+    window.location.href = "https://maps.garmin.com/nl-NL/marine/?maps=another-brand&overlay=false&key=" + encrypt(lat) + encrypt(lon)
 }
   
 
