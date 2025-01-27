@@ -1,66 +1,28 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-
-        .slider-container {
-            width: 300px;
-            text-align: center;
-        }
-        .slider-value {
-            margin-top: 10px;
-        }
-    </style>
+    <title>Mobile Website</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<h1>Navigeer scrippie</h1>
-Kleine mvp om naar je eigen locatie te navigeren met Navionics.<br>
-Werkt alleen (nog) op noordelijk/oostelijk halfrond. Dus vanaf Londen naar rechts en evenaar omhoog anders gaat ie gek doen. <br>
-Onderaan kan je de zoom aanpassen.
-<h2>Navigeer naar eigen coordinaten (main act, de rest is bijzaak)</h2>
-<button onclick="main()">NAVIGEER</button>
-
-
-<h2>Klik om je eigen coordinaten te checken</h2>
-<button onclick="getLocation()">KLIK</button>
-
-<p id="demo"></p>
-
-<h2>Navigeer naar andere coordinaten</h2>
-
-
-<input type="text" id="myLat" placeholder="Enter latitude">
-<input type="text" id="myLon" placeholder="Enter longitude">
-<button onclick="test()">NAVIGEER</button>
-
-
-<p id="testOutput"></p>
-
-<h2>Een klassieker</h2>
-<button onclick="sukosan()">Sukosan</button>
-
-
-<h2>Zoom veranderen</h2>
-<p>1 = uitgezoomd, 15 = ingezoomd. 12 is standaard ingesteld</p>
-
-<div class="slider-container">
-    <label for="mySlider">Selecteer zoom: </label>
-    <input type="range" id="mySlider" min="1" max="15" value="12" oninput="updateValue(this.value)">
-    <div class="slider-value">
-        Huidige waarde: <span id="sliderValue">12</span>
+<body class="bg-gray-100 flex flex-col justify-between h-screen">
+    <!-- Top Image -->
+    <div class="w-full">
+        <img 
+            src="bellepoque.png" 
+            alt="Belle Epoque" 
+            class="w-full object-cover"
+        >
     </div>
-</div>
 
-
-<script type="text/javascript" src="functions.js"></script>
-
-
-
-
+    <!-- Bottom Image -->
+    <div class="w-full">
+        <img 
+            src="qrcode.png" 
+            alt="QR Code" 
+            class="w-full object-cover"
+        >
+    </div>
 </body>
-
-
 </html>
