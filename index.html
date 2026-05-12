@@ -1,10 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mobile Website</title>
+  <title>Quick Notes</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
+
 <body>
-    <img src="bellepoque.jpg" alt="Belle Epoque">
-    
+
+  <div class="container">
+
+    <h1>Quick Notes</h1>
+
+    <div class="inputRow">
+      <input id="noteInput" placeholder="Type something...">
+      <button onclick="addEntry()">Add</button>
+    </div>
+
+    <div id="entries"></div>
+
+  </div>
+
+  <script src="script.js"></script>
+
 </body>
 </html>
