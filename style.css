@@ -1,0 +1,52 @@
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #111;
+  color: white;
+}
+
+.container {
+  max-width: 500px;
+  margin: auto;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+}
+
+.inputRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+input {
+  flex: 1;
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+button {
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  background: #00b894;
+  color: white;
+  font-size: 16px;
+}
+
+.entry {
+  background: #222;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.time {
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px;
+}
