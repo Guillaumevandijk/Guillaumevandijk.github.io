@@ -1,21 +1,35 @@
-// Supabase browser client: loads the SDK from a CDN and creates a client for this project.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js'
 
 const supabaseUrl = 'https://wnifvpadsttgyxjellmx.supabase.co'
-
-// Publishable (anon) key: safe for front-end use; access is limited by Row Level Security in Supabase.
 const supabaseKey = 'sb_publishable_0TAlUKDZZkCMjYj4FxAV2w_cG3OjZEC'
 
 const isLocal =
   location.hostname === 'localhost' ||
   location.hostname === '127.0.0.1'
-  
-const TABLE = isLocal ? 'forgot_dev' : 'forgot'
 
+const TABLE = isLocal ? 'forgot_dev' : 'forgot'
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-// Fetches every row from the `forgot` table and renders them into the HTML table (newest first).
+const loginSection = document.getElementById('loginSection')
+const appSection = document.getElementById('appSection')
+const loginForm = document.getElementById('loginForm')
+const loginError = document.getElementById('loginError')
+
+function showLogin(message = '') {
+  loginSection.hidden = false
+  appSection.hidden = true
+  loginError.hidden = !message
+  loginError.textContent = message
+}
+
+function showApp() {
+  loginSection.hidden = true
+  appSection.hidden = false
+  loginError.hidden = true
+  loginError.textContent = ''
+}
+
 async function loadData() {
   const { data, error } = await supabase
     .from(TABLE)
@@ -24,30 +38,29 @@ async function loadData() {
 
   if (error) {
     console.error(error)
+    if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+      showLogin('Sessie verlopen. Log opnieuw in.')
+      await supabase.auth.signOut()
+    }
     return
   }
 
   const tableBody = document.getElementById('tableBody')
   tableBody.innerHTML = ''
 
-  // One table row per database row: text column and a human-readable created_at timestamp.
   data.forEach(item => {
     const row = document.createElement('tr')
-
     row.innerHTML = `
-          <td>${item.text}</td>
-          <td>${new Date(item.created_at).toLocaleString()}</td>
-        `
-
+      <td>${item.text}</td>
+      <td>${new Date(item.created_at).toLocaleString()}</td>
+    `
     tableBody.appendChild(row)
   })
 }
 
-// Reads the input, inserts a new row into `forgot`, then clears the input and refreshes the table.
 async function addForgot() {
   const input = document.getElementById('forgotInput')
   const value = input.value.trim()
-
   if (!value) return
 
   const { error } = await supabase
@@ -56,7 +69,7 @@ async function addForgot() {
 
   if (error) {
     console.error(error)
-    alert('Error saving')
+    alert('Kon niet opslaan. Ben je ingelogd?')
     return
   }
 
@@ -64,7 +77,45 @@ async function addForgot() {
   loadData()
 }
 
+async function signIn(email, password) {
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) {
+    showLogin(error.message === 'Invalid login credentials'
+      ? 'Onjuiste e-mail of wachtwoord.'
+      : error.message)
+    return false
+  }
+  return true
+}
+
+async function signOut() {
+  await supabase.auth.signOut()
+  showLogin()
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const email = document.getElementById('loginEmail').value.trim()
+  const password = document.getElementById('loginPassword').value
+  await signIn(email, password)
+})
+
+document.getElementById('logoutBtn').addEventListener('click', signOut)
 document.getElementById('addForgotBtn').addEventListener('click', addForgot)
 
-// Initial load when the page opens so the table is filled from the database.
-loadData()
+supabase.auth.onAuthStateChange((_event, session) => {
+  if (session) {
+    showApp()
+    loadData()
+  } else {
+    showLogin()
+  }
+})
+
+const { data: { session } } = await supabase.auth.getSession()
+if (session) {
+  showApp()
+  loadData()
+} else {
+  showLogin()
+}
