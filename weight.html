@@ -4,7 +4,7 @@
   <link rel="apple-touch-icon" href="doh.jpeg">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vergeten</title>
+  <title>Gewicht</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -21,24 +21,28 @@
 
   <section id="appSection" class="app-section" hidden>
     <nav class="top-nav">
-      <a href="index.html" class="active">Vergeten</a>
-      <a href="weight.html">Gewicht</a>
+      <a href="index.html">Vergeten</a>
+      <a href="weight.html" class="active">Gewicht</a>
     </nav>
 
     <header class="app-header">
-      <h1>Wat ben ik nou weer vergeten?</h1>
+      <h1>Mijn gewicht</h1>
       <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
     </header>
 
+    <div class="chart-wrap">
+      <canvas id="weightChart" aria-label="Grafiek van gewicht over tijd"></canvas>
+    </div>
+
     <div class="input-row">
-      <input id="forgotInput" placeholder="Wat dan?" />
-      <button type="button" id="addForgotBtn">Toevoegen</button>
+      <input id="weightInput" type="number" step="0.1" min="0" placeholder="Gewicht (kg)" />
+      <button type="button" id="addWeightBtn">Toevoegen</button>
     </div>
 
     <table>
       <thead>
         <tr>
-          <th>Vergeten</th>
+          <th>Gewicht</th>
           <th>Wanneer</th>
         </tr>
       </thead>
@@ -46,7 +50,7 @@
     </table>
   </section>
 
-  <script type="module" src="js/forgot.js"></script>
+  <script type="module" src="js/weight.js"></script>
 
 </body>
 </html>
