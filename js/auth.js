@@ -1,5 +1,7 @@
 import { supabase } from './supabase-client.js'
 
+
+
 /**
  * Shared login UI for index.html and weight.html.
  * @param {{ onAuthenticated: () => void }} options — called when user is logged in
