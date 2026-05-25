@@ -9,7 +9,7 @@ async function askAI(message) {
 
   const { data, error } = await supabase.functions.invoke('openai-private-proxy', {
     body: {
-      model: 'gpt-4o-mini',
+      model: 'gpt-5.4-nano',
       messages: [
         {
           role: 'system',
