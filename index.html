@@ -20,20 +20,21 @@
     <p id="loginError" class="login-error" hidden></p>
   </section>
 
-  <input id="chatInput" />
-  <button id="sendBtn">Send</button>
-  <div id="chatOutput"></div>
-
   <section id="appSection" class="app-section" hidden>
     <nav class="top-nav">
       <a href="index.html" class="active">Vergeten</a>
       <a href="weight.html">Gewicht</a>
+      <a href="ai.html">AI</a>
     </nav>
 
     <header class="app-header">
       <h1>Wat ben ik nou weer vergeten?</h1>
       <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
     </header>
+
+    <div class="chart-wrap">
+      <canvas id="forgotChart" aria-label="Grafiek van vergeten items, 3-daags gemiddelde"></canvas>
+    </div>
 
     <div class="input-row">
       <input id="forgotInput" placeholder="Wat dan?" />

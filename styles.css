@@ -90,6 +90,13 @@ h1 {
   margin-bottom: 20px;
 }
 
+.chat-output {
+  margin-top: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  min-height: 2rem;
+}
+
 input {
   flex: 1;
   padding: 12px;
