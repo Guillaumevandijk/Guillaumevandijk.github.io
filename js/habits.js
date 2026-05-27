@@ -4,7 +4,7 @@ import { getTodayDate, onDevTodayChange } from './dev-today.js'
 
 const TABLE = getTable('habits_daily')
 /** First day shown in the grid; earlier days stay grey. */
-const TRACKING_START = '2026-05-26'
+const TRACKING_START = '2026-05-27'
 const HABIT_COUNT = 4
 
 const HABITS = [
