@@ -55,12 +55,12 @@ h1 {
 .top-nav a {
   flex: 1;
   text-align: center;
-  padding: 10px 12px;
+  padding: 8px 6px;
   text-decoration: none;
   color: #333;
   border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .top-nav a:hover {
@@ -121,4 +121,81 @@ td, th {
 
 th {
   background: #f5f5f5;
+}
+
+.habit-today-label {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #444;
+}
+
+.habit-today {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.habit-today li {
+  margin-bottom: 10px;
+}
+
+.habit-today label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.habit-today input[type="checkbox"] {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.habits-grid-wrap {
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+.habits-grid {
+  width: 100%;
+  min-width: 320px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.habits-grid th,
+.habits-grid td {
+  border: 1px solid #ddd;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.habits-grid thead th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+.habits-grid tbody th {
+  background: #f5f5f5;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.habits-cell {
+  min-width: 2.5rem;
+  font-weight: 600;
+}
+
+.habits-cell--future,
+.habits-cell--inactive {
+  background: #e8e8e8 !important;
+  color: transparent !important;
+}
+
+.habits-cell--today {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
 }

@@ -1,6 +1,7 @@
 import Chart from 'https://esm.sh/chart.js/auto'
 import { supabase, getTable } from './supabase-client.js'
 import { initAuth } from './auth.js'
+import { getTodayDate, onDevTodayChange } from './dev-today.js'
 
 const TABLE = getTable('forgot')
 
@@ -33,7 +34,7 @@ function buildChartSeries(rows) {
 
   const sortedKeys = [...countsByDay.keys()].sort()
   const firstDay = sortedKeys[0]
-  const today = toLocalDateKey(new Date())
+  const today = toLocalDateKey(getTodayDate())
 
   const dayKeys = []
   for (let key = firstDay; key <= today; key = addDays(key, 1)) {
@@ -158,3 +159,8 @@ async function addForgot() {
 document.getElementById('addForgotBtn').addEventListener('click', addForgot)
 
 initAuth({ onAuthenticated: loadData })
+
+onDevTodayChange(() => {
+  const app = document.getElementById('appSection')
+  if (app && !app.hidden) loadData()
+})

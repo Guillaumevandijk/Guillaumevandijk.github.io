@@ -4,7 +4,7 @@
   <link rel="apple-touch-icon" href="doh.jpeg">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI</title>
+  <title>Gewoontes</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -23,23 +23,38 @@
     <nav class="top-nav">
       <a href="index.html">Vergeten</a>
       <a href="weight.html">Gewicht</a>
-      <a href="ai.html" class="active">AI</a>
-      <a href="habits.html">Gewoontes</a>
+      <a href="ai.html">AI</a>
+      <a href="habits.html" class="active">Gewoontes</a>
     </nav>
 
     <header class="app-header">
-      <h1>Chat met AI</h1>
+      <h1>Gewoontes</h1>
       <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
     </header>
 
-    <div class="input-row">
-      <input id="chatInput" placeholder="Stel een vraag..." />
-      <button type="button" id="sendBtn">Verstuur</button>
+    <p id="todayLabel" class="habit-today-label"></p>
+    <ul id="habitChecklist" class="habit-today"></ul>
+
+    <div class="habits-grid-wrap">
+      <table class="habits-grid" aria-label="Weekoverzicht gewoontes">
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <th scope="col">Ma</th>
+            <th scope="col">Di</th>
+            <th scope="col">Wo</th>
+            <th scope="col">Do</th>
+            <th scope="col">Vr</th>
+            <th scope="col">Za</th>
+            <th scope="col">Zo</th>
+          </tr>
+        </thead>
+        <tbody id="habitsGridBody"></tbody>
+      </table>
     </div>
-    <div id="chatOutput" class="chat-output"></div>
   </section>
 
-  <script type="module" src="js/ai.js"></script>
+  <script type="module" src="js/habits.js"></script>
 
 </body>
 </html>
