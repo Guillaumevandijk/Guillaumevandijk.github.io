@@ -7,7 +7,9 @@ create table if not exists public.habits_daily (
   protein_shake boolean not null default false,
   b12 boolean not null default false,
   magnesium boolean not null default false,
-  calve_exercises boolean not null default false
+  calve_exercises boolean not null default false,
+  creatine boolean not null default false,
+  habit_number smallint not null default 4
 );
 
 create table if not exists public.habits_daily_dev (

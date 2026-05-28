@@ -5,14 +5,20 @@ import { getTodayDate, onDevTodayChange } from './dev-today.js'
 const TABLE = getTable('habits_daily')
 /** First day shown in the grid; earlier days stay grey. */
 const TRACKING_START = '2026-05-27'
-const HABIT_COUNT = 4
+/**
+ * First day with 5 habits (incl. creatine). Days before this count as 4 habits
+ * unless habit_number is already set on the row in Supabase.
+ */
+const HABITS_EXPAND_DATE = '2026-05-28'
 
-const HABITS = [
+const CORE_HABITS = [
   { key: 'protein_shake', label: 'Eiwit shake' },
   { key: 'b12', label: 'B12 vitamine' },
   { key: 'magnesium', label: 'Magnesium vitamine' },
   { key: 'calve_exercises', label: 'Kuit oefeningen' },
 ]
+
+const CREATINE_HABIT = { key: 'creatine', label: 'Creatine' }
 
 let rowsByDate = new Map()
 let todayKey = ''
@@ -54,14 +60,30 @@ function isoWeekNumber(dateKey) {
   return Math.ceil((((thursday - yearStart) / 86400000) + 1) / 7)
 }
 
-function countCompleted(row) {
-  if (!row) return 0
-  return HABITS.filter(h => row[h.key]).length
+function getHabitCountForDate(dateKey, row = null) {
+  if (row?.habit_number != null && row.habit_number !== '') {
+    return Number(row.habit_number)
+  }
+  return dateKey >= HABITS_EXPAND_DATE ? 5 : 4
 }
 
-function completionPercent(row) {
-  const done = row ? countCompleted(row) : 0
-  return Math.round((done / HABIT_COUNT) * 100)
+function getHabitsForDate(dateKey, row = null) {
+  const habits = [...CORE_HABITS]
+  if (getHabitCountForDate(dateKey, row) >= 5) {
+    habits.push(CREATINE_HABIT)
+  }
+  return habits
+}
+
+function countCompleted(row, dateKey) {
+  if (!row) return 0
+  return getHabitsForDate(dateKey, row).filter(h => row[h.key]).length
+}
+
+function completionPercent(row, dateKey) {
+  const total = getHabitCountForDate(dateKey, row)
+  const done = row ? countCompleted(row, dateKey) : 0
+  return Math.round((done / total) * 100)
 }
 
 function cellStyle(percent) {
@@ -74,10 +96,23 @@ function cellStyle(percent) {
 }
 
 function rowToPayload(row) {
-  const payload = { habit_date: todayKey }
-  for (const h of HABITS) {
+  const habits = getHabitsForDate(todayKey, row)
+  const habitNumber = getHabitCountForDate(todayKey, row)
+
+  const payload = {
+    habit_date: todayKey,
+    habit_number: habitNumber,
+    protein_shake: false,
+    b12: false,
+    magnesium: false,
+    calve_exercises: false,
+    creatine: false,
+  }
+
+  for (const h of habits) {
     payload[h.key] = Boolean(row?.[h.key])
   }
+
   return payload
 }
 
@@ -95,9 +130,10 @@ function getRowForDate(dateKey) {
 function renderTodayCheckboxes() {
   const list = document.getElementById('habitChecklist')
   const row = getRowForDate(todayKey)
+  const habits = getHabitsForDate(todayKey, row)
   list.innerHTML = ''
 
-  for (const habit of HABITS) {
+  for (const habit of habits) {
     const li = document.createElement('li')
     const id = `habit-${habit.key}`
     li.innerHTML = `
@@ -124,10 +160,11 @@ function renderTodayCheckboxes() {
 async function onHabitToggle() {
   const current = getRowForDate(todayKey) ?? { habit_date: todayKey }
   const payload = rowToPayload(current)
+  const habits = getHabitsForDate(todayKey, current)
 
-  for (const habit of HABITS) {
+  for (const habit of habits) {
     const input = document.getElementById(`habit-${habit.key}`)
-    payload[habit.key] = input.checked
+    if (input) payload[habit.key] = input.checked
   }
 
   const { data, error } = await supabase
@@ -156,7 +193,7 @@ function setGreyCell(td) {
 
 function setPercentCell(td, dateKey) {
   const row = getRowForDate(dateKey)
-  const pct = completionPercent(row)
+  const pct = completionPercent(row, dateKey)
   const style = cellStyle(pct)
   td.className = 'habits-cell'
   td.textContent = `${pct}%`
