@@ -14,7 +14,7 @@ const HABITS_EXPAND_DATE = '2026-05-28'
 const CORE_HABITS = [
   { key: 'protein_shake', label: 'Eiwit shake' },
   { key: 'b12', label: 'B12 vitamine' },
-  { key: 'magnesium', label: 'Magnesium vitamine' },
+  { key: 'magnesium', label: 'Magnesium' },
   { key: 'calve_exercises', label: 'Kuit oefeningen' },
 ]
 
@@ -22,6 +22,8 @@ const CREATINE_HABIT = { key: 'creatine', label: 'Creatine' }
 
 let rowsByDate = new Map()
 let todayKey = ''
+let yesterdayKey = ''
+let editingYesterday = false
 
 function toLocalDateKey(value) {
   const d = value instanceof Date ? value : new Date(value)
@@ -95,12 +97,12 @@ function cellStyle(percent) {
   }
 }
 
-function rowToPayload(row) {
-  const habits = getHabitsForDate(todayKey, row)
-  const habitNumber = getHabitCountForDate(todayKey, row)
+function rowToPayload(dateKey, row) {
+  const habits = getHabitsForDate(dateKey, row)
+  const habitNumber = getHabitCountForDate(dateKey, row)
 
   const payload = {
-    habit_date: todayKey,
+    habit_date: dateKey,
     habit_number: habitNumber,
     protein_shake: false,
     b12: false,
@@ -116,6 +118,14 @@ function rowToPayload(row) {
   return payload
 }
 
+function activeEditDateKey() {
+  return editingYesterday ? yesterdayKey : todayKey
+}
+
+function canEditYesterday() {
+  return yesterdayKey >= TRACKING_START
+}
+
 function normalizeHabitDate(value) {
   if (typeof value === 'string' && value.length >= 10) {
     return value.slice(0, 10)
@@ -127,10 +137,36 @@ function getRowForDate(dateKey) {
   return rowsByDate.get(dateKey) ?? null
 }
 
-function renderTodayCheckboxes() {
+function formatDayLabel(dateKey, prefix) {
+  const date = parseDateKey(dateKey)
+  const formatted = date.toLocaleDateString('nl-NL', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+  return `${prefix} — ${formatted}`
+}
+
+function renderYesterdayToggle() {
+  const btn = document.getElementById('yesterdayToggle')
+  if (!btn) return
+
+  if (!canEditYesterday()) {
+    btn.hidden = true
+    editingYesterday = false
+    return
+  }
+
+  btn.hidden = false
+  btn.setAttribute('aria-pressed', String(editingYesterday))
+  btn.classList.toggle('yesterday-toggle--active', editingYesterday)
+}
+
+function renderCheckboxes() {
+  const dateKey = activeEditDateKey()
   const list = document.getElementById('habitChecklist')
-  const row = getRowForDate(todayKey)
-  const habits = getHabitsForDate(todayKey, row)
+  const row = getRowForDate(dateKey)
+  const habits = getHabitsForDate(dateKey, row)
   list.innerHTML = ''
 
   for (const habit of habits) {
@@ -148,19 +184,27 @@ function renderTodayCheckboxes() {
     list.appendChild(li)
   }
 
-  const today = parseDateKey(todayKey)
-  document.getElementById('todayLabel').textContent =
-    `Vandaag — ${today.toLocaleDateString('nl-NL', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    })}`
+  const label = document.getElementById('todayLabel')
+  if (editingYesterday) {
+    label.textContent = formatDayLabel(dateKey, 'Gisteren')
+  } else {
+    label.textContent = formatDayLabel(todayKey, 'Vandaag')
+  }
+
+  renderYesterdayToggle()
+}
+
+function onYesterdayToggleClick() {
+  if (!canEditYesterday()) return
+  editingYesterday = !editingYesterday
+  renderCheckboxes()
 }
 
 async function onHabitToggle() {
-  const current = getRowForDate(todayKey) ?? { habit_date: todayKey }
-  const payload = rowToPayload(current)
-  const habits = getHabitsForDate(todayKey, current)
+  const dateKey = activeEditDateKey()
+  const current = getRowForDate(dateKey) ?? { habit_date: dateKey }
+  const payload = rowToPayload(dateKey, current)
+  const habits = getHabitsForDate(dateKey, current)
 
   for (const habit of habits) {
     const input = document.getElementById(`habit-${habit.key}`)
@@ -180,7 +224,7 @@ async function onHabitToggle() {
     return
   }
 
-  rowsByDate.set(todayKey, data)
+  rowsByDate.set(dateKey, data)
   renderGrid()
 }
 
@@ -251,6 +295,10 @@ function indexRows(data) {
 
 async function loadData() {
   todayKey = toLocalDateKey(getTodayDate())
+  yesterdayKey = addDaysToKey(todayKey, -1)
+  if (editingYesterday && !canEditYesterday()) {
+    editingYesterday = false
+  }
   const rangeStart = TRACKING_START
 
   const { data, error } = await supabase
@@ -269,8 +317,13 @@ async function loadData() {
   }
 
   indexRows(data ?? [])
-  renderTodayCheckboxes()
+  renderCheckboxes()
   renderGrid()
+}
+
+const yesterdayToggleBtn = document.getElementById('yesterdayToggle')
+if (yesterdayToggleBtn) {
+  yesterdayToggleBtn.addEventListener('click', onYesterdayToggleClick)
 }
 
 initAuth({ onAuthenticated: loadData })
