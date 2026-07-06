@@ -126,9 +126,84 @@ h1 {
 
 .chat-output {
   margin-top: 0;
-  white-space: pre-wrap;
-  line-height: 1.5;
+  line-height: 1.55;
   min-height: 2rem;
+}
+
+.chat-output > :first-child {
+  margin-top: 0;
+}
+
+.chat-output > :last-child {
+  margin-bottom: 0;
+}
+
+.chat-output p {
+  margin: 0.6em 0;
+}
+
+.chat-output h1,
+.chat-output h2,
+.chat-output h3,
+.chat-output h4 {
+  margin: 1em 0 0.4em;
+  line-height: 1.3;
+}
+
+.chat-output h1 { font-size: 1.35rem; }
+.chat-output h2 { font-size: 1.2rem; }
+.chat-output h3 { font-size: 1.05rem; }
+
+.chat-output ul,
+.chat-output ol {
+  margin: 0.5em 0;
+  padding-left: 1.4em;
+}
+
+.chat-output li {
+  margin: 0.25em 0;
+}
+
+.chat-output strong {
+  font-weight: 700;
+}
+
+.chat-output em {
+  font-style: italic;
+}
+
+.chat-output hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 1em 0;
+}
+
+.chat-output code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  background: #f3f4f6;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+.chat-output pre {
+  margin: 0.75em 0;
+  padding: 0.75em;
+  background: #f3f4f6;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.chat-output pre code {
+  background: none;
+  padding: 0;
+}
+
+.chat-output blockquote {
+  margin: 0.75em 0;
+  padding-left: 0.75em;
+  border-left: 3px solid #ddd;
+  color: #444;
 }
 
 input {

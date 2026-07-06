@@ -1,5 +1,17 @@
+import { marked } from 'https://esm.sh/marked@15.0.6'
+import DOMPurify from 'https://esm.sh/dompurify@3.2.4'
 import { supabase } from './supabase-client.js'
 import { initAuth } from './auth.js'
+
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+})
+
+function renderReply(element, markdown) {
+  const html = marked.parse(markdown ?? '')
+  element.innerHTML = DOMPurify.sanitize(html)
+}
 
 async function askAI(message) {
   const { data: { session } } = await supabase.auth.getSession()
@@ -36,14 +48,14 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
   const message = input.value.trim()
   if (!message) return
 
-  output.innerText = 'Bezig...'
+  output.textContent = 'Bezig...'
 
   try {
     const reply = await askAI(message)
-    output.innerText = reply
+    renderReply(output, reply)
   } catch (err) {
     console.error(err)
-    output.innerText = 'Fout bij AI-verzoek'
+    output.textContent = 'Fout bij AI-verzoek'
   }
 })
 
