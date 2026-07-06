@@ -1,4 +1,5 @@
 import Chart from 'https://esm.sh/chart.js/auto'
+import 'https://esm.sh/chartjs-adapter-date-fns'
 import { supabase, getTable } from './supabase-client.js'
 import { initAuth } from './auth.js'
 
@@ -26,15 +27,12 @@ function renderChart(rows) {
   weightChart = new Chart(canvas, {
     type: 'line',
     data: {
-      labels: sorted.map(row =>
-        new Date(row.created_at).toLocaleDateString('nl-NL', {
-          day: 'numeric',
-          month: 'short',
-        })
-      ),
       datasets: [{
         label: 'Gewicht (kg)',
-        data: sorted.map(row => Number(row.weight)),
+        data: sorted.map(row => ({
+          x: new Date(row.created_at).getTime(),
+          y: Number(row.weight),
+        })),
         borderColor: '#2563eb',
         backgroundColor: 'rgba(37, 99, 235, 0.1)',
         fill: true,
@@ -45,10 +43,23 @@ function renderChart(rows) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      parsing: false,
       plugins: {
         legend: { display: false },
       },
       scales: {
+        x: {
+          type: 'time',
+          time: {
+            tooltipFormat: 'd MMM yyyy HH:mm',
+            displayFormats: {
+              day: 'd MMM',
+              week: 'd MMM',
+              month: 'MMM yyyy',
+            },
+          },
+          title: { display: true, text: 'Datum' },
+        },
         y: {
           beginAtZero: false,
           title: { display: true, text: 'kg' },
