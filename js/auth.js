@@ -3,7 +3,7 @@ import { supabase } from './supabase-client.js'
 
 
 /**
- * Shared login UI for index.html, weight.html, ai.html, and habits.html.
+ * Shared login UI for index.html, weight.html, run.html, ai.html, and habits.html.
  * @param {{ onAuthenticated: () => void }} options — called when user is logged in
  */
 export async function initAuth({ onAuthenticated }) {

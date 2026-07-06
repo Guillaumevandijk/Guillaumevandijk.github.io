@@ -77,12 +77,12 @@ h1 {
 .top-nav a {
   flex: 1;
   text-align: center;
-  padding: 8px 6px;
+  padding: 8px 4px;
   text-decoration: none;
   color: #333;
   border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .top-nav a:hover {
@@ -110,6 +110,18 @@ h1 {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
+}
+
+.run-input-row {
+  flex-wrap: wrap;
+}
+
+.run-input-row input {
+  min-width: 5rem;
+}
+
+.run-input-row button {
+  flex-shrink: 0;
 }
 
 .chat-output {
