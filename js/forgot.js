@@ -22,7 +22,7 @@ function addDays(dateKey, days) {
   return toLocalDateKey(date)
 }
 
-/** Daily counts from first entry through today, plus trailing 7-day average. */
+/** Daily counts from first entry through today, plus trailing 4-day average. */
 function buildChartSeries(rows) {
   if (rows.length === 0) return { labels: [], dailyCounts: [], averages: [] }
 
@@ -43,7 +43,7 @@ function buildChartSeries(rows) {
 
   const dailyCounts = dayKeys.map(key => countsByDay.get(key) ?? 0)
   const averages = dailyCounts.map((_, i) => {
-    const window = dailyCounts.slice(Math.max(0, i - 6), i + 1)
+    const window = dailyCounts.slice(Math.max(0, i - 3), i + 1)
     const sum = window.reduce((a, b) => a + b, 0)
     return sum / window.length
   })
@@ -89,7 +89,7 @@ function renderChart(rows) {
         },
         {
           type: 'line',
-          label: '7-daags gemiddelde',
+          label: '4-daags gemiddelde',
           data: averages,
           borderColor: '#dc2626',
           backgroundColor: 'transparent',
