@@ -6,7 +6,7 @@ import { getTodayDate, onDevTodayChange } from './dev-today.js'
 
 const TABLE = getTable('run_stats')
 const FORECAST_MONTHS = 6
-const TRACKING_START = '2026-07-01'
+const TRACKING_START = '2026-06-30'
 
 let runChart = null
 let runRows = []
