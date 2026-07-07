@@ -3,5 +3,8 @@
     "dot-env": "^0.0.1",
     "dotenv": "^17.4.2",
     "openai": "^6.38.0"
+  },
+  "devDependencies": {
+    "supabase": "^2.109.1"
   }
 }
