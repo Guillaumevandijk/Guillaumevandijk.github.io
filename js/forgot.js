@@ -22,9 +22,9 @@ function addDays(dateKey, days) {
   return toLocalDateKey(date)
 }
 
-/** Daily counts from first entry through today, then trailing 3-day average. */
+/** Daily counts from first entry through today, plus trailing 7-day average. */
 function buildChartSeries(rows) {
-  if (rows.length === 0) return { labels: [], averages: [] }
+  if (rows.length === 0) return { labels: [], dailyCounts: [], averages: [] }
 
   const countsByDay = new Map()
   for (const row of rows) {
@@ -43,9 +43,9 @@ function buildChartSeries(rows) {
 
   const dailyCounts = dayKeys.map(key => countsByDay.get(key) ?? 0)
   const averages = dailyCounts.map((_, i) => {
-    const window = dailyCounts.slice(Math.max(0, i - 2), i + 1)
+    const window = dailyCounts.slice(Math.max(0, i - 6), i + 1)
     const sum = window.reduce((a, b) => a + b, 0)
-    return sum / 3
+    return sum / window.length
   })
 
   const labels = dayKeys.map(key => {
@@ -56,12 +56,12 @@ function buildChartSeries(rows) {
     })
   })
 
-  return { labels, averages }
+  return { labels, dailyCounts, averages }
 }
 
 function renderChart(rows) {
   const canvas = document.getElementById('forgotChart')
-  const { labels, averages } = buildChartSeries(rows)
+  const { labels, dailyCounts, averages } = buildChartSeries(rows)
 
   if (forgotChart) {
     forgotChart.destroy()
@@ -75,18 +75,30 @@ function renderChart(rows) {
   }
 
   forgotChart = new Chart(canvas, {
-    type: 'line',
+    type: 'bar',
     data: {
       labels,
-      datasets: [{
-        label: '3-daags gemiddelde',
-        data: averages,
-        borderColor: '#2563eb',
-        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-        fill: true,
-        tension: 0.2,
-        pointRadius: 3,
-      }],
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Per dag',
+          data: dailyCounts,
+          backgroundColor: '#2563eb',
+          borderRadius: 4,
+          order: 2,
+        },
+        {
+          type: 'line',
+          label: '7-daags gemiddelde',
+          data: averages,
+          borderColor: '#dc2626',
+          backgroundColor: 'transparent',
+          tension: 0.2,
+          pointRadius: 0,
+          borderWidth: 2,
+          order: 1,
+        },
+      ],
     },
     options: {
       responsive: true,
