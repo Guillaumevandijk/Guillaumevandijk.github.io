@@ -118,7 +118,9 @@ function completionPercent(row, dateKey) {
 }
 
 function cellStyle(percent) {
-  const hue = (percent / 100) * 120
+  const t = Math.max(0, Math.min(100, percent)) / 100
+  // Ease hue toward red/orange: only high % reaches green (100% unchanged at hue 120).
+  const hue = Math.pow(t, 2.5) * 120
   const color = `hsl(${hue}, 70%, 42%)`
   return {
     backgroundColor: color,
