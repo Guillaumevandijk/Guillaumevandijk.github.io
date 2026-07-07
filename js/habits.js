@@ -3,6 +3,7 @@ import { initAuth } from './auth.js'
 import { getTodayDate, onDevTodayChange } from './dev-today.js'
 
 const TABLE = getTable('habits_daily')
+const RUN_TABLE = getTable('run_stats')
 /** First day shown in the grid; earlier days stay grey. */
 const TRACKING_START = '2026-05-27'
 /**
@@ -21,6 +22,8 @@ const CORE_HABITS = [
 const CREATINE_HABIT = { key: 'creatine', label: 'Creatine' }
 
 let rowsByDate = new Map()
+/** Dates where kuit oefeningen is waived (run day + day after each run). */
+let calveWaivedDates = new Set()
 let todayKey = ''
 let yesterdayKey = ''
 let editingYesterday = false
@@ -77,14 +80,40 @@ function getHabitsForDate(dateKey, row = null) {
   return habits
 }
 
+function isCalveWaived(dateKey) {
+  return calveWaivedDates.has(dateKey)
+}
+
+function buildCalveWaivedDates(runRows) {
+  const waived = new Set()
+  const runDates = new Set()
+
+  for (const row of runRows) {
+    runDates.add(toLocalDateKey(row.created_at))
+  }
+
+  for (const dateKey of runDates) {
+    waived.add(dateKey)
+    waived.add(addDaysToKey(dateKey, 1))
+  }
+
+  return waived
+}
+
+function getActiveHabitsForDate(dateKey, row = null) {
+  return getHabitsForDate(dateKey, row).filter(
+    h => !(h.key === 'calve_exercises' && isCalveWaived(dateKey))
+  )
+}
+
 function countCompleted(row, dateKey) {
-  if (!row) return 0
-  return getHabitsForDate(dateKey, row).filter(h => row[h.key]).length
+  return getActiveHabitsForDate(dateKey, row).filter(h => row?.[h.key]).length
 }
 
 function completionPercent(row, dateKey) {
-  const total = getHabitCountForDate(dateKey, row)
-  const done = row ? countCompleted(row, dateKey) : 0
+  const total = getActiveHabitsForDate(dateKey, row).length
+  if (total === 0) return 0
+  const done = countCompleted(row, dateKey)
   return Math.round((done / total) * 100)
 }
 
@@ -179,8 +208,17 @@ function renderCheckboxes() {
       </label>
     `
     const input = li.querySelector('input')
+    const label = li.querySelector('label')
+    const waived = habit.key === 'calve_exercises' && isCalveWaived(dateKey)
+
     input.checked = Boolean(row?.[habit.key])
-    input.addEventListener('change', onHabitToggle)
+    if (waived) {
+      label.classList.add('habit-waived')
+      input.disabled = true
+      label.title = 'Vrijgesteld door hardlopen'
+    } else {
+      input.addEventListener('change', onHabitToggle)
+    }
     list.appendChild(li)
   }
 
@@ -207,6 +245,7 @@ async function onHabitToggle() {
   const habits = getHabitsForDate(dateKey, current)
 
   for (const habit of habits) {
+    if (habit.key === 'calve_exercises' && isCalveWaived(dateKey)) continue
     const input = document.getElementById(`habit-${habit.key}`)
     if (input) payload[habit.key] = input.checked
   }
@@ -301,22 +340,33 @@ async function loadData() {
   }
   const rangeStart = TRACKING_START
 
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .gte('habit_date', rangeStart)
-    .lte('habit_date', todayKey)
-    .order('habit_date', { ascending: true })
+  const [habitsResult, runsResult] = await Promise.all([
+    supabase
+      .from(TABLE)
+      .select('*')
+      .gte('habit_date', rangeStart)
+      .lte('habit_date', todayKey)
+      .order('habit_date', { ascending: true }),
+    supabase
+      .from(RUN_TABLE)
+      .select('created_at'),
+  ])
 
-  if (error) {
-    console.error(error)
-    if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+  if (habitsResult.error) {
+    console.error(habitsResult.error)
+    if (habitsResult.error.code === 'PGRST301' || habitsResult.error.message?.includes('JWT')) {
       await supabase.auth.signOut()
     }
     return
   }
 
-  indexRows(data ?? [])
+  if (runsResult.error) {
+    console.error(runsResult.error)
+  } else {
+    calveWaivedDates = buildCalveWaivedDates(runsResult.data ?? [])
+  }
+
+  indexRows(habitsResult.data ?? [])
   renderCheckboxes()
   renderGrid()
 }

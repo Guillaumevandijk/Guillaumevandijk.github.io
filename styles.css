@@ -294,6 +294,17 @@ th {
   cursor: pointer;
 }
 
+.habit-today label.habit-waived {
+  text-decoration: line-through;
+  color: #777;
+  cursor: default;
+}
+
+.habit-today label.habit-waived input[type="checkbox"] {
+  cursor: default;
+  opacity: 0.5;
+}
+
 .habits-grid-wrap {
   overflow-x: auto;
   margin-bottom: 20px;
