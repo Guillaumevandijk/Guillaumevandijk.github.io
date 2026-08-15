@@ -11,12 +11,14 @@ function loginSection() {
   section.id = 'loginSection'
   section.className = 'login-section'
   section.innerHTML = `
-    <h1>Inloggen</h1>
+    <h1 id="loginTitle">Inloggen</h1>
     <form id="loginForm" class="login-form">
       <input id="loginEmail" type="email" placeholder="E-mail" autocomplete="username" required />
       <input id="loginPassword" type="password" placeholder="Wachtwoord" autocomplete="current-password" required />
-      <button type="submit">Inloggen</button>
+      <input id="loginPasswordConfirm" type="password" placeholder="Wachtwoord herhalen" autocomplete="new-password" hidden />
+      <button type="submit" id="loginSubmit">Inloggen</button>
     </form>
+    <button type="button" id="loginModeToggle" class="login-toggle">Nog geen account? Account aanmaken</button>
     <p id="loginError" class="login-error" hidden></p>
   `
   return section

@@ -13,12 +13,33 @@ export async function initAuth({ onAuthenticated }) {
   const appSection = document.getElementById('appSection')
   const loginForm = document.getElementById('loginForm')
   const loginError = document.getElementById('loginError')
+  const loginTitle = document.getElementById('loginTitle')
+  const loginSubmit = document.getElementById('loginSubmit')
+  const loginModeToggle = document.getElementById('loginModeToggle')
+  const passwordConfirm = document.getElementById('loginPasswordConfirm')
 
-  function showLogin(message = '') {
+  let isSignUp = false
+
+  function setMode(signUp) {
+    isSignUp = signUp
+    loginTitle.textContent = signUp ? 'Account aanmaken' : 'Inloggen'
+    loginSubmit.textContent = signUp ? 'Account aanmaken' : 'Inloggen'
+    loginModeToggle.textContent = signUp
+      ? 'Al een account? Inloggen'
+      : 'Nog geen account? Account aanmaken'
+    passwordConfirm.hidden = !signUp
+    passwordConfirm.required = signUp
+    document.getElementById('loginPassword').autocomplete = signUp
+      ? 'new-password'
+      : 'current-password'
+  }
+
+  function showLogin(message = '', isHint = false) {
     loginSection.hidden = false
     appSection.hidden = true
     loginError.hidden = !message
     loginError.textContent = message
+    loginError.classList.toggle('login-hint', isHint)
   }
 
   function showApp() {
@@ -26,6 +47,7 @@ export async function initAuth({ onAuthenticated }) {
     appSection.hidden = false
     loginError.hidden = true
     loginError.textContent = ''
+    loginError.classList.remove('login-hint')
   }
 
   async function handleAuthError(error) {
@@ -47,6 +69,31 @@ export async function initAuth({ onAuthenticated }) {
     return true
   }
 
+  async function signUp(email, password, passwordRepeat) {
+    if (password.length < 6) {
+      showLogin('Wachtwoord moet minstens 6 tekens zijn.')
+      return false
+    }
+    if (password !== passwordRepeat) {
+      showLogin('Wachtwoorden komen niet overeen.')
+      return false
+    }
+
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) {
+      showLogin(error.message === 'User already registered'
+        ? 'Dit e-mailadres heeft al een account. Log in.'
+        : error.message)
+      return false
+    }
+
+    if (!data.session) {
+      setMode(false)
+      showLogin('Account aangemaakt. Bevestig je e-mail en log daarna in.', true)
+    }
+    return true
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
     showLogin()
@@ -64,7 +111,16 @@ export async function initAuth({ onAuthenticated }) {
     e.preventDefault()
     const email = document.getElementById('loginEmail').value.trim()
     const password = document.getElementById('loginPassword').value
-    await signIn(email, password)
+    if (isSignUp) {
+      await signUp(email, password, passwordConfirm.value)
+    } else {
+      await signIn(email, password)
+    }
+  })
+
+  loginModeToggle.addEventListener('click', () => {
+    setMode(!isSignUp)
+    showLogin()
   })
 
   const logoutBtn = document.getElementById('logoutBtn')

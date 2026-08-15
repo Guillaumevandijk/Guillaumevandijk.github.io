@@ -4,8 +4,6 @@ import { getTodayDate, onDevTodayChange } from './dev-today.js'
 
 const TABLE = getTable('habits_daily')
 const RUN_TABLE = getTable('run_stats')
-/** First day shown in the grid; earlier days stay grey. */
-const TRACKING_START = '2026-05-27'
 /**
  * First day with 5 habits (incl. creatine). Days before this count as 4 habits
  * unless habit_number is already set on the row in Supabase.
@@ -27,6 +25,8 @@ let calveWaivedDates = new Set()
 let todayKey = ''
 let yesterdayKey = ''
 let editingYesterday = false
+/** First habit_date for this user, or today if they have none yet. */
+let trackingStart = ''
 
 function toLocalDateKey(value) {
   const d = value instanceof Date ? value : new Date(value)
@@ -154,7 +154,7 @@ function activeEditDateKey() {
 }
 
 function canEditYesterday() {
-  return yesterdayKey >= TRACKING_START
+  return Boolean(trackingStart) && yesterdayKey >= trackingStart
 }
 
 function normalizeHabitDate(value) {
@@ -305,14 +305,20 @@ function setPercentCell(td, dateKey) {
 }
 
 function isInTrackingRange(dateKey) {
-  return dateKey >= TRACKING_START && dateKey <= todayKey
+  return Boolean(trackingStart) && dateKey >= trackingStart && dateKey <= todayKey
+}
+
+function earliestHabitDate() {
+  const dates = [...rowsByDate.keys()].sort()
+  return dates[0] ?? todayKey
 }
 
 function renderGrid() {
   const tbody = document.getElementById('habitsGridBody')
   tbody.innerHTML = ''
+  if (!trackingStart) return
 
-  const trackingStartMonday = mondayOfWeek(TRACKING_START)
+  const trackingStartMonday = mondayOfWeek(trackingStart)
   const currentMonday = mondayOfWeek(todayKey)
   const weekMondays = []
 
@@ -355,13 +361,11 @@ async function loadData() {
   if (editingYesterday && !canEditYesterday()) {
     editingYesterday = false
   }
-  const rangeStart = TRACKING_START
 
   const [habitsResult, runsResult] = await Promise.all([
     supabase
       .from(TABLE)
       .select('*')
-      .gte('habit_date', rangeStart)
       .lte('habit_date', todayKey)
       .order('habit_date', { ascending: true }),
     supabase
@@ -384,6 +388,10 @@ async function loadData() {
   }
 
   indexRows(habitsResult.data ?? [])
+  trackingStart = earliestHabitDate()
+  if (editingYesterday && !canEditYesterday()) {
+    editingYesterday = false
+  }
   renderCheckboxes()
   renderGrid()
 }

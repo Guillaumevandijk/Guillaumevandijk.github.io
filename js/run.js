@@ -6,7 +6,6 @@ import { getTodayDate, onDevTodayChange } from './dev-today.js'
 
 const TABLE = getTable('run_stats')
 const FORECAST_MONTHS = 6
-const TRACKING_START = '2026-06-30'
 
 let runChart = null
 let runRows = []
@@ -138,8 +137,16 @@ function buildRunsByDay(rows) {
   return map
 }
 
-function isInTrackingRange(dateKey) {
-  return dateKey >= TRACKING_START && dateKey <= todayKey
+function earliestRunDate(rows) {
+  if (!rows.length) return null
+  return rows.reduce((min, row) => {
+    const key = toLocalDateKey(row.created_at)
+    return !min || key < min ? key : min
+  }, null)
+}
+
+function isInTrackingRange(dateKey, trackingStart) {
+  return Boolean(trackingStart) && dateKey >= trackingStart && dateKey <= todayKey
 }
 
 function setGreyCell(td) {
@@ -269,9 +276,12 @@ function renderChart(rows) {
 function renderGrid(rows) {
   const tbody = document.getElementById('runGridBody')
   tbody.innerHTML = ''
+  const trackingStart = earliestRunDate(rows)
+  if (!trackingStart) return
+
   const runsByDay = buildRunsByDay(rows)
 
-  const trackingStartMonday = mondayOfWeek(TRACKING_START)
+  const trackingStartMonday = mondayOfWeek(trackingStart)
   const currentMonday = mondayOfWeek(todayKey)
   const weekMondays = []
 
@@ -289,7 +299,7 @@ function renderGrid(rows) {
       const td = document.createElement('td')
       const day = runsByDay.get(dateKey)
 
-      if (!isInTrackingRange(dateKey) || !day) {
+      if (!isInTrackingRange(dateKey, trackingStart) || !day) {
         setGreyCell(td)
       } else {
         const avgRating = day.ratings.length
