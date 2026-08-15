@@ -1,60 +1,14 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <link rel="apple-touch-icon" href="doh.jpeg">
-  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vergeten</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta http-equiv="refresh" content="0; url=weight.html">
+  <title>Redirect</title>
+  <link rel="canonical" href="weight.html">
+  <script>location.replace('weight.html')</script>
 </head>
 <body>
-
-  <section id="loginSection" class="login-section">
-    <h1>Inloggen</h1>
-    <form id="loginForm" class="login-form">
-      <input id="loginEmail" type="email" placeholder="E-mail" autocomplete="username" required />
-      <input id="loginPassword" type="password" placeholder="Wachtwoord" autocomplete="current-password" required />
-      <button type="submit">Inloggen</button>
-    </form>
-    <p id="loginError" class="login-error" hidden></p>
-  </section>
-
-  <section id="appSection" class="app-section" hidden>
-    <nav class="top-nav">
-      <a href="index.html" class="active">Vergeten</a>
-      <a href="weight.html">Gewicht</a>
-      <a href="run.html">Hardlopen</a>
-      <a href="ai.html">AI</a>
-      <a href="habits.html">Gewoontes</a>
-    </nav>
-
-    <header class="app-header">
-      <h1>Wat ben ik nou weer vergeten?</h1>
-      <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
-    </header>
-
-    <div class="chart-wrap">
-      <canvas id="forgotChart" aria-label="Grafiek van vergeten items per dag en 4-daags gemiddelde"></canvas>
-    </div>
-
-    <div class="input-row">
-      <input id="forgotInput" placeholder="Wat dan?" />
-      <button type="button" id="addForgotBtn">Toevoegen</button>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Vergeten</th>
-          <th>Wanneer</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-  </section>
-
-  <script type="module" src="js/forgot.js"></script>
-
+  <p><a href="weight.html">Door naar Gewicht</a></p>
 </body>
 </html>

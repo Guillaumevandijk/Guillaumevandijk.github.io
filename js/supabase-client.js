@@ -7,7 +7,7 @@ export const isLocal =
   location.hostname === 'localhost' ||
   location.hostname === '127.0.0.1'
 
-/** e.g. getTable('forgot') → forgot_dev locally, forgot on GitHub Pages */
+/** e.g. getTable('weight') → weight_dev locally, weight on GitHub Pages */
 export function getTable(baseName) {
   return isLocal ? `${baseName}_dev` : baseName
 }

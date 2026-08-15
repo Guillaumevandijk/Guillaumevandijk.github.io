@@ -1,0 +1,13 @@
+# dependencies
+node_modules/
+
+# secrets — never commit API keys or service_role keys
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
+# npm
+npm-debug.log*
