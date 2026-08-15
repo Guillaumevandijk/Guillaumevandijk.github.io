@@ -7,10 +7,45 @@ import {
   createHabit,
   updateHabit,
 } from './habit-catalog.js'
+import {
+  SPORT_COLORS,
+  ensureDefaultSports,
+  createSportType,
+  updateSportType,
+  deleteSportType,
+} from './sport-catalog.js'
 
 let profile = null
 let habitDefs = []
+let sportTypes = []
 let currentUserId = null
+let newSportColor = SPORT_COLORS[0]
+
+function fillColorSwatches(container, selected, onSelect) {
+  container.innerHTML = ''
+  container.classList.add('sport-color-swatches')
+  container.setAttribute('role', 'radiogroup')
+  container.setAttribute('aria-label', 'Kleur')
+  const current = (selected ?? '').toLowerCase()
+
+  for (const color of SPORT_COLORS) {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'sport-color-swatch'
+    btn.style.backgroundColor = color
+    btn.setAttribute('aria-label', color)
+    btn.setAttribute('aria-pressed', String(color.toLowerCase() === current))
+    btn.addEventListener('click', () => onSelect(color))
+    container.appendChild(btn)
+  }
+}
+
+function renderNewSportColors() {
+  fillColorSwatches(document.getElementById('newSportColors'), newSportColor, color => {
+    newSportColor = color
+    renderNewSportColors()
+  })
+}
 
 function pagesEnabled() {
   return new Set(profile?.enabled_pages ?? PAGES.map(page => page.key))
@@ -18,6 +53,10 @@ function pagesEnabled() {
 
 function habitsPageOn() {
   return pagesEnabled().has('habits')
+}
+
+function sportPageOn() {
+  return pagesEnabled().has('sport')
 }
 
 function todayKey() {
@@ -201,6 +240,97 @@ async function refreshHabits() {
   renderHabitsEditor()
 }
 
+function renderSportsEditor() {
+  const section = document.getElementById('sportsEditor')
+  section.hidden = !sportPageOn()
+  if (section.hidden) return
+
+  const list = document.getElementById('sportTypesList')
+  list.innerHTML = ''
+
+  if (sportTypes.length === 0) {
+    const empty = document.createElement('li')
+    empty.className = 'settings-empty'
+    empty.textContent = 'Nog geen sporten. Voeg er hieronder een toe.'
+    list.appendChild(empty)
+    return
+  }
+
+  sportTypes.forEach(sport => {
+    const li = document.createElement('li')
+    li.className = 'habit-def'
+
+    const nameInput = document.createElement('input')
+    nameInput.type = 'text'
+    nameInput.value = sport.name
+    nameInput.setAttribute('aria-label', 'Naam')
+    nameInput.addEventListener('change', async () => {
+      const name = nameInput.value.trim()
+      if (!name) {
+        nameInput.value = sport.name
+        return
+      }
+      const { data, error } = await updateSportType(sport.id, { name })
+      if (error) {
+        console.error(error)
+        alert(error.code === '23505' ? 'Die sport bestaat al.' : 'Kon naam niet opslaan.')
+        nameInput.value = sport.name
+        return
+      }
+      Object.assign(sport, data)
+    })
+
+    const swatches = document.createElement('div')
+    fillColorSwatches(swatches, sport.color, async color => {
+      const { data, error } = await updateSportType(sport.id, { color })
+      if (error) {
+        console.error(error)
+        alert('Kon kleur niet opslaan.')
+        renderSportsEditor()
+        return
+      }
+      Object.assign(sport, data)
+      renderSportsEditor()
+    })
+
+    const remove = document.createElement('button')
+    remove.type = 'button'
+    remove.className = 'settings-delete'
+    remove.textContent = 'Verwijderen'
+    remove.addEventListener('click', async () => {
+      if (!confirm(`Wil je ${sport.name} verwijderen? Geplande en gedane sessies van deze sport verdwijnen ook.`)) {
+        return
+      }
+      const { error } = await deleteSportType(sport.id)
+      if (error) {
+        console.error(error)
+        alert('Kon sport niet verwijderen.')
+        return
+      }
+      sportTypes = sportTypes.filter(item => item.id !== sport.id)
+      renderSportsEditor()
+    })
+
+    li.append(nameInput, swatches, remove)
+    list.appendChild(li)
+  })
+}
+
+async function refreshSports() {
+  if (!sportPageOn()) {
+    renderSportsEditor()
+    return
+  }
+  const { data, error } = await ensureDefaultSports(currentUserId)
+  if (error) {
+    console.error(error)
+    return
+  }
+  sportTypes = data
+  renderSportsEditor()
+  renderNewSportColors()
+}
+
 async function onPagesChange() {
   const { data, error } = await saveProfile({ enabled_pages: selectedPages() })
   if (error) {
@@ -213,6 +343,7 @@ async function onPagesChange() {
   applyNav(profile)
   renderPages()
   await refreshHabits()
+  await refreshSports()
 }
 
 async function onAddHabit(event) {
@@ -252,6 +383,42 @@ async function onAddHabit(event) {
   renderHabitsEditor()
 }
 
+async function onAddSport(event) {
+  event.preventDefault()
+  if (!currentUserId) {
+    alert('Kon niet opslaan. Ben je ingelogd?')
+    return
+  }
+
+  const nameInput = document.getElementById('newSportName')
+  const name = nameInput.value.trim()
+  if (!name) return
+
+  const color = newSportColor
+  const position = sportTypes.length
+    ? Math.max(...sportTypes.map(item => item.position)) + 1
+    : 0
+
+  const { data, error } = await createSportType({
+    userId: currentUserId,
+    name,
+    color,
+    position,
+  })
+
+  if (error) {
+    console.error(error)
+    alert(error.code === '23505' ? 'Die sport bestaat al.' : 'Kon sport niet toevoegen.')
+    return
+  }
+
+  sportTypes.push(data)
+  nameInput.value = ''
+  newSportColor = SPORT_COLORS[0]
+  renderNewSportColors()
+  renderSportsEditor()
+}
+
 initAuth({
   onAuthenticated: async loaded => {
     profile = loaded
@@ -259,8 +426,10 @@ initAuth({
     currentUserId = user?.id ?? null
     renderPages()
     await refreshHabits()
+    await refreshSports()
   },
 })
 
 document.getElementById('pagesList').addEventListener('change', onPagesChange)
 document.getElementById('addHabitForm').addEventListener('submit', onAddHabit)
+document.getElementById('addSportForm').addEventListener('submit', onAddSport)

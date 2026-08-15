@@ -1,5 +1,5 @@
 import { supabase } from './supabase-client.js'
-import { loadOrCreateProfile, applyNav, redirectIfPageDisabled } from './profile.js'
+import { loadOrCreateProfile, applyNav, redirectIfPageDisabled, getCachedEnabledPages, clearEnabledPagesCache } from './profile.js'
 import { renderShell } from './layout.js'
 
 /**
@@ -95,15 +95,22 @@ export async function initAuth({ onAuthenticated }) {
   }
 
   async function signOut() {
+    clearEnabledPagesCache()
     await supabase.auth.signOut()
     showLogin()
   }
 
   async function afterLogin() {
-    showApp()
+    const cached = getCachedEnabledPages()
+    if (cached) {
+      applyNav({ enabled_pages: cached })
+      showApp()
+    }
+
     const profile = await loadOrCreateProfile()
     applyNav(profile)
     redirectIfPageDisabled(profile)
+    showApp()
     onAuthenticated(profile)
   }
 

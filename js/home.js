@@ -3,7 +3,6 @@ import { initAuth } from './auth.js'
 import { LONG_GOAL_KEYS, SHORT_GOAL_KEYS, saveProfile } from './profile.js'
 
 const NOTES_TABLE = getTable('notes')
-const FEEDBACK_TABLE = getTable('feedback')
 
 let profile = null
 let editingGoals = false
@@ -124,43 +123,6 @@ async function addNote() {
   await loadNotes()
 }
 
-function toggleFeedbackForm() {
-  const form = document.getElementById('feedbackForm')
-  form.hidden = !form.hidden
-  if (!form.hidden) {
-    document.getElementById('feedbackInput').focus()
-  }
-}
-
-async function sendFeedback() {
-  const input = document.getElementById('feedbackInput')
-  const text = input.value.trim()
-  if (!text) {
-    alert('Schrijf eerst je feedback.')
-    return
-  }
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user?.email) {
-    alert('Kon niet opslaan. Ben je ingelogd?')
-    return
-  }
-
-  const { error } = await supabase
-    .from(FEEDBACK_TABLE)
-    .insert([{ email: user.email, text }])
-
-  if (error) {
-    console.error(error)
-    alert('Kon feedback niet versturen.')
-    return
-  }
-
-  input.value = ''
-  document.getElementById('feedbackForm').hidden = true
-  alert('Bedankt, feedback is verstuurd.')
-}
-
 initAuth({
   onAuthenticated: loaded => {
     profile = loaded
@@ -182,5 +144,3 @@ document.getElementById('cancelGoalsBtn').addEventListener('click', () => {
 
 document.getElementById('saveGoalsBtn').addEventListener('click', onSaveGoals)
 document.getElementById('addNoteBtn').addEventListener('click', addNote)
-document.getElementById('feedbackBtn').addEventListener('click', toggleFeedbackForm)
-document.getElementById('sendFeedbackBtn').addEventListener('click', sendFeedback)

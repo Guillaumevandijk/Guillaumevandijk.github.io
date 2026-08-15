@@ -82,19 +82,6 @@ function linearRegression(points) {
   }
 }
 
-/** "6:25" → seconds per km (385). */
-function parseTempoInput(value) {
-  const trimmed = value.trim()
-  const match = trimmed.match(/^(\d+):(\d{1,2})$/)
-  if (!match) return null
-
-  const minutes = parseInt(match[1], 10)
-  const seconds = parseInt(match[2], 10)
-  if (seconds >= 60) return null
-
-  return minutes * 60 + seconds
-}
-
 function formatTempo(secondsPerKm) {
   const m = Math.floor(secondsPerKm / 60)
   const s = Math.round(secondsPerKm % 60)
@@ -361,52 +348,6 @@ async function loadData() {
   renderGrid(rows)
   renderTable(rows)
 }
-
-async function addRun() {
-  const distanceInput = document.getElementById('distanceInput')
-  const tempoInput = document.getElementById('tempoInput')
-  const ratingInput = document.getElementById('ratingInput')
-
-  const distance = parseFloat(distanceInput.value.replace(',', '.'))
-  const tempoSeconds = parseTempoInput(tempoInput.value)
-  const rating = parseInt(ratingInput.value, 10)
-
-  if (Number.isNaN(distance) || distance <= 0) {
-    alert('Voer een geldige afstand in (km).')
-    return
-  }
-
-  if (tempoSeconds == null) {
-    alert('Voer tempo in als min:sec per km, bijv. 6:25')
-    return
-  }
-
-  if (Number.isNaN(rating) || rating < 1 || rating > 10) {
-    alert('Kuit cijfer moet tussen 1 en 10 zijn.')
-    return
-  }
-
-  const { error } = await supabase
-    .from(TABLE)
-    .insert([{
-      distance_km: distance,
-      tempo_seconds: tempoSeconds,
-      rating,
-    }])
-
-  if (error) {
-    console.error(error)
-    alert('Kon niet opslaan. Ben je ingelogd?')
-    return
-  }
-
-  distanceInput.value = ''
-  tempoInput.value = ''
-  ratingInput.value = ''
-  loadData()
-}
-
-document.getElementById('addRunBtn').addEventListener('click', addRun)
 
 document.getElementById('forecastToggle')?.addEventListener('click', () => {
   const points = buildChartPoints(

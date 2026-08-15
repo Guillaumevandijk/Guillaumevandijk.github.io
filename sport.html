@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <link rel="apple-touch-icon" href="doh.jpeg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sport</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="sport">
+
+  <section id="appSection" class="app-section" hidden>
+    <header class="app-header">
+      <h1>Sport</h1>
+      <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
+    </header>
+
+    <div class="chart-toolbar sport-toolbar">
+      <button type="button" id="planningToggle" class="forecast-toggle" aria-pressed="false">
+        Planning
+      </button>
+      <button type="button" id="templateApplyBtn" class="forecast-toggle" hidden>
+        Plan volgende week met template
+      </button>
+    </div>
+
+    <div id="sportTemplatesWrap" class="habits-grid-wrap" hidden>
+      <p id="sportTemplatesHint" class="settings-hint"></p>
+      <table class="habits-grid" aria-label="Opgeslagen templates">
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <th scope="col">Ma</th>
+            <th scope="col">Di</th>
+            <th scope="col">Wo</th>
+            <th scope="col">Do</th>
+            <th scope="col">Vr</th>
+            <th scope="col">Za</th>
+            <th scope="col">Zo</th>
+          </tr>
+        </thead>
+        <tbody id="sportTemplateBody"></tbody>
+      </table>
+    </div>
+
+    <div id="sportEditor" class="sport-editor" hidden></div>
+
+    <div class="habits-grid-wrap">
+      <table class="habits-grid" aria-label="Sportoverzicht">
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <th scope="col">Ma</th>
+            <th scope="col">Di</th>
+            <th scope="col">Wo</th>
+            <th scope="col">Do</th>
+            <th scope="col">Vr</th>
+            <th scope="col">Za</th>
+            <th scope="col">Zo</th>
+          </tr>
+        </thead>
+        <tbody id="sportPlanBody"></tbody>
+      </table>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Wanneer</th>
+          <th>Sport</th>
+          <th>Cijfer</th>
+          <th data-run-col>Afstand</th>
+          <th data-run-col>Tempo</th>
+          <th>Notitie</th>
+        </tr>
+      </thead>
+      <tbody id="sportDoneTableBody"></tbody>
+    </table>
+  </section>
+
+  <script type="module" src="js/sport.js"></script>
+
+</body>
+</html>

@@ -41,6 +41,19 @@
         </div>
       </details>
     </section>
+
+    <section id="sportsEditor" class="settings-block" hidden>
+      <details class="settings-fold">
+        <summary>Sporten</summary>
+        <p class="settings-hint">Namen en kleuren van sporten die je plant en afvinkt. De kleur zie je in het overzicht als je de training hebt gedaan.</p>
+        <ul id="sportTypesList" class="habit-defs"></ul>
+        <form id="addSportForm" class="settings-goal-form">
+          <input id="newSportName" type="text" placeholder="Nieuwe sport" required />
+          <div id="newSportColors" class="sport-color-swatches" role="radiogroup" aria-label="Kleur"></div>
+          <button type="submit">Toevoegen</button>
+        </form>
+      </details>
+    </section>
   </section>
 
   <script type="module" src="js/settings.js"></script>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <link rel="apple-touch-icon" href="doh.jpeg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slaap en gevoel</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="sleep">
+
+  <section id="appSection" class="app-section" hidden>
+    <header class="app-header">
+      <h1>Slaap en gevoel</h1>
+      <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
+    </header>
+
+    <details id="sleepEditor" class="settings-fold">
+      <summary id="nightLabel"></summary>
+      <p id="sleepDurationHint" class="sleep-duration-hint"></p>
+      <div class="sleep-fields">
+        <label>
+          Naar bed
+          <input id="bedtimeInput" type="time" />
+        </label>
+        <label>
+          Wakker
+          <input id="wakeInput" type="time" />
+        </label>
+        <label>
+          Gevoel (1–10)
+          <input id="ratingInput" type="number" min="1" max="10" step="1" />
+        </label>
+        <label class="sleep-note-label">
+          Notitie
+          <input id="noteInput" type="text" placeholder="Optioneel" />
+        </label>
+      </div>
+    </details>
+
+    <div class="habits-grid-wrap">
+      <table class="habits-grid" aria-label="Weekoverzicht slaap en gevoel">
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <th scope="col">Ma</th>
+            <th scope="col">Di</th>
+            <th scope="col">Wo</th>
+            <th scope="col">Do</th>
+            <th scope="col">Vr</th>
+            <th scope="col">Za</th>
+            <th scope="col">Zo</th>
+          </tr>
+        </thead>
+        <tbody id="sleepGridBody"></tbody>
+      </table>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nacht</th>
+          <th>Naar bed</th>
+          <th>Wakker</th>
+          <th>Slaap</th>
+          <th>Gevoel</th>
+          <th>Notitie</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </section>
+
+  <script type="module" src="js/sleep.js"></script>
+
+</body>
+</html>

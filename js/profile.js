@@ -3,6 +3,8 @@ import { supabase, getTable } from './supabase-client.js'
 export const PAGES = [
   { key: 'weight', href: 'weight.html', label: 'Gewicht' },
   { key: 'run', href: 'run.html', label: 'Hardlopen' },
+  { key: 'sport', href: 'sport.html', label: 'Sport' },
+  { key: 'sleep', href: 'sleep.html', label: 'Slaap en gevoel' },
   { key: 'ai', href: 'ai.html', label: 'AI' },
   { key: 'habits', href: 'habits.html', label: 'Gewoontes' },
 ]
@@ -11,7 +13,28 @@ export const LONG_GOAL_KEYS = ['long_goal_1', 'long_goal_2', 'long_goal_3']
 export const SHORT_GOAL_KEYS = ['short_goal_1', 'short_goal_2', 'short_goal_3']
 
 const DEFAULT_PAGES = PAGES.map(page => page.key)
-const ALWAYS_VISIBLE = new Set(['home', 'settings'])
+export const ALWAYS_VISIBLE = new Set(['home', 'settings'])
+
+const ENABLED_PAGES_CACHE_KEY = 'enabled_pages'
+
+export function getCachedEnabledPages() {
+  try {
+    const raw = sessionStorage.getItem(ENABLED_PAGES_CACHE_KEY)
+    if (!raw) return null
+    const pages = JSON.parse(raw)
+    return Array.isArray(pages) ? pages : null
+  } catch {
+    return null
+  }
+}
+
+function cacheEnabledPages(pages) {
+  sessionStorage.setItem(ENABLED_PAGES_CACHE_KEY, JSON.stringify(pages))
+}
+
+export function clearEnabledPagesCache() {
+  sessionStorage.removeItem(ENABLED_PAGES_CACHE_KEY)
+}
 
 function profilesTable() {
   return getTable('profiles')
@@ -68,7 +91,9 @@ export async function saveProfile(updates) {
 }
 
 export function applyNav(profile) {
-  const enabled = new Set(profile?.enabled_pages ?? DEFAULT_PAGES)
+  const enabledList = profile?.enabled_pages ?? getCachedEnabledPages() ?? DEFAULT_PAGES
+  cacheEnabledPages(enabledList)
+  const enabled = new Set(enabledList)
 
   document.querySelectorAll('.top-nav a[data-page]').forEach(link => {
     const key = link.dataset.page
