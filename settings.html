@@ -20,6 +20,27 @@
       <p class="settings-hint">Kies welke onderdelen jij gebruikt. Home blijft altijd zichtbaar.</p>
       <ul id="pagesList" class="settings-pages"></ul>
     </section>
+
+    <section id="habitsEditor" class="settings-block" hidden>
+      <details class="settings-fold">
+        <summary>Gewoontes</summary>
+        <p class="settings-hint">Namen en aantal gewoontes die jij bijhoudt. Stoppen bewaart ze onder Oude gewoontes, zodat je ze later weer kunt toevoegen.</p>
+        <ul id="habitDefsList" class="habit-defs"></ul>
+        <form id="addHabitForm" class="settings-goal-form">
+          <input id="newHabitName" type="text" placeholder="Nieuwe gewoonte" required />
+          <label class="habit-def-skip">
+            <input id="newHabitSkipRun" type="checkbox" />
+            Vrij op hardloopdag en de dag erna
+          </label>
+          <button type="submit">Toevoegen</button>
+        </form>
+        <div id="oldHabitsWrap" hidden>
+          <h3 class="settings-subheading">Oude gewoontes</h3>
+          <p class="settings-hint">Gestopt, maar niet weg. Voeg ze opnieuw toe als je ze weer wilt bijhouden.</p>
+          <ul id="oldHabitsList" class="habit-defs"></ul>
+        </div>
+      </details>
+    </section>
   </section>
 
   <script type="module" src="js/settings.js"></script>

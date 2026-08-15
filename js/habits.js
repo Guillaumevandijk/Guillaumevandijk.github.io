@@ -1,39 +1,30 @@
-import { supabase, getTable, isLocal } from './supabase-client.js'
+import { supabase, getTable } from './supabase-client.js'
 import { initAuth } from './auth.js'
 import { getTodayDate, onDevTodayChange } from './dev-today.js'
+import {
+  dateOnly,
+  isHabitActiveOn,
+  isSkipAfterRun,
+  loadHabits,
+  loadLogs,
+  upsertLog,
+} from './habit-catalog.js'
 
-const TABLE = getTable('habits_daily')
 const RUN_TABLE = getTable('run_stats')
-/**
- * First day with 5 habits (incl. creatine). Days before this count as 4 habits
- * unless habit_number is already set on the row in Supabase.
- */
-const HABITS_EXPAND_DATE = '2026-05-28'
 
-const CORE_HABITS = [
-  { key: 'protein_shake', label: 'Eiwit shake' },
-  { key: 'b12', label: 'B12 vitamine' },
-  { key: 'magnesium', label: 'Magnesium' },
-  { key: 'calve_exercises', label: 'Kuit oefeningen' },
-]
-
-const CREATINE_HABIT = { key: 'creatine', label: 'Creatine' }
-
-let rowsByDate = new Map()
-/** Dates where kuit oefeningen is waived (run day + day after each run). */
+let habitDefs = []
+/** dateKey -> Map(habitId -> done) */
+let logsByDate = new Map()
+/** Dates where skip_after_run habits are waived (run day + day after). */
 let calveWaivedDates = new Set()
 let todayKey = ''
 let yesterdayKey = ''
 let editingYesterday = false
-/** First habit_date for this user, or today if they have none yet. */
 let trackingStart = ''
+let currentUserId = null
 
 function toLocalDateKey(value) {
-  const d = value instanceof Date ? value : new Date(value)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return dateOnly(value)
 }
 
 function parseDateKey(key) {
@@ -47,7 +38,6 @@ function addDaysToKey(dateKey, days) {
   return toLocalDateKey(date)
 }
 
-/** Monday of the week containing dateKey (local). */
 function mondayOfWeek(dateKey) {
   const date = parseDateKey(dateKey)
   const day = date.getDay()
@@ -56,28 +46,12 @@ function mondayOfWeek(dateKey) {
   return toLocalDateKey(date)
 }
 
-/** ISO week number (1–53). */
 function isoWeekNumber(dateKey) {
   const date = parseDateKey(dateKey)
   const thursday = new Date(date)
   thursday.setDate(date.getDate() + (4 - (date.getDay() || 7)))
   const yearStart = new Date(thursday.getFullYear(), 0, 1)
   return Math.ceil((((thursday - yearStart) / 86400000) + 1) / 7)
-}
-
-function getHabitCountForDate(dateKey, row = null) {
-  if (row?.habit_number != null && row.habit_number !== '') {
-    return Number(row.habit_number)
-  }
-  return dateKey >= HABITS_EXPAND_DATE ? 5 : 4
-}
-
-function getHabitsForDate(dateKey, row = null) {
-  const habits = [...CORE_HABITS]
-  if (getHabitCountForDate(dateKey, row) >= 5) {
-    habits.push(CREATINE_HABIT)
-  }
-  return habits
 }
 
 function isCalveWaived(dateKey) {
@@ -100,26 +74,34 @@ function buildCalveWaivedDates(runRows) {
   return waived
 }
 
-function getActiveHabitsForDate(dateKey, row = null) {
-  return getHabitsForDate(dateKey, row).filter(
-    h => !(h.key === 'calve_exercises' && isCalveWaived(dateKey))
+function habitsForDate(dateKey) {
+  return habitDefs.filter(habit => isHabitActiveOn(habit, dateKey))
+}
+
+function getActiveHabitsForDate(dateKey) {
+  return habitsForDate(dateKey).filter(
+    habit => !(isSkipAfterRun(habit) && isCalveWaived(dateKey))
   )
 }
 
-function countCompleted(row, dateKey) {
-  return getActiveHabitsForDate(dateKey, row).filter(h => row?.[h.key]).length
+function isDone(dateKey, habitId) {
+  return Boolean(logsByDate.get(dateKey)?.get(habitId))
 }
 
-function completionPercent(row, dateKey) {
-  const total = getActiveHabitsForDate(dateKey, row).length
-  if (total === 0) return 0
-  const done = countCompleted(row, dateKey)
-  return Math.round((done / total) * 100)
+function setDoneLocal(dateKey, habitId, done) {
+  if (!logsByDate.has(dateKey)) logsByDate.set(dateKey, new Map())
+  logsByDate.get(dateKey).set(habitId, done)
+}
+
+function completionPercent(dateKey) {
+  const active = getActiveHabitsForDate(dateKey)
+  if (active.length === 0) return 0
+  const done = active.filter(habit => isDone(dateKey, habit.id)).length
+  return Math.round((done / active.length) * 100)
 }
 
 function cellStyle(percent) {
   const t = Math.max(0, Math.min(100, percent)) / 100
-  // Ease hue toward red/orange: only high % reaches green (100% unchanged at hue 120).
   const hue = Math.pow(t, 2.5) * 120
   const color = `hsl(${hue}, 70%, 42%)`
   return {
@@ -128,44 +110,12 @@ function cellStyle(percent) {
   }
 }
 
-function rowToPayload(dateKey, row) {
-  const habits = getHabitsForDate(dateKey, row)
-  const habitNumber = getHabitCountForDate(dateKey, row)
-
-  const payload = {
-    habit_date: dateKey,
-    habit_number: habitNumber,
-    protein_shake: false,
-    b12: false,
-    magnesium: false,
-    calve_exercises: false,
-    creatine: false,
-  }
-
-  for (const h of habits) {
-    payload[h.key] = Boolean(row?.[h.key])
-  }
-
-  return payload
-}
-
 function activeEditDateKey() {
   return editingYesterday ? yesterdayKey : todayKey
 }
 
 function canEditYesterday() {
   return Boolean(trackingStart) && yesterdayKey >= trackingStart
-}
-
-function normalizeHabitDate(value) {
-  if (typeof value === 'string' && value.length >= 10) {
-    return value.slice(0, 10)
-  }
-  return toLocalDateKey(value)
-}
-
-function getRowForDate(dateKey) {
-  return rowsByDate.get(dateKey) ?? null
 }
 
 function formatDayLabel(dateKey, prefix) {
@@ -196,24 +146,21 @@ function renderYesterdayToggle() {
 function renderCheckboxes() {
   const dateKey = activeEditDateKey()
   const list = document.getElementById('habitChecklist')
-  const row = getRowForDate(dateKey)
-  const habits = getHabitsForDate(dateKey, row)
   list.innerHTML = ''
 
-  for (const habit of habits) {
+  for (const habit of habitsForDate(dateKey)) {
     const li = document.createElement('li')
-    const id = `habit-${habit.key}`
-    li.innerHTML = `
-      <label for="${id}">
-        <input type="checkbox" id="${id}" data-habit="${habit.key}" />
-        ${habit.label}
-      </label>
-    `
-    const input = li.querySelector('input')
-    const label = li.querySelector('label')
-    const waived = habit.key === 'calve_exercises' && isCalveWaived(dateKey)
+    const id = `habit-${habit.id}`
+    const label = document.createElement('label')
+    label.htmlFor = id
+    const input = document.createElement('input')
+    input.type = 'checkbox'
+    input.id = id
+    input.dataset.habitId = habit.id
+    input.checked = isDone(dateKey, habit.id)
 
-    input.checked = Boolean(row?.[habit.key])
+    const waived = isSkipAfterRun(habit) && isCalveWaived(dateKey)
+    label.append(input, document.createTextNode(` ${habit.name}`))
     if (waived) {
       label.classList.add('habit-waived')
       input.disabled = true
@@ -221,14 +168,16 @@ function renderCheckboxes() {
     } else {
       input.addEventListener('change', onHabitToggle)
     }
+
+    li.appendChild(label)
     list.appendChild(li)
   }
 
-  const label = document.getElementById('todayLabel')
+  const title = document.getElementById('todayLabel')
   if (editingYesterday) {
-    label.textContent = formatDayLabel(dateKey, 'Gisteren')
+    title.textContent = formatDayLabel(dateKey, 'Gisteren')
   } else {
-    label.textContent = formatDayLabel(todayKey, 'Vandaag')
+    title.textContent = formatDayLabel(todayKey, 'Vandaag')
   }
 
   renderYesterdayToggle()
@@ -240,38 +189,23 @@ function onYesterdayToggleClick() {
   renderCheckboxes()
 }
 
-async function onHabitToggle() {
+async function onHabitToggle(event) {
   const dateKey = activeEditDateKey()
-  const current = getRowForDate(dateKey) ?? { habit_date: dateKey }
-  const payload = rowToPayload(dateKey, current)
-  const habits = getHabitsForDate(dateKey, current)
+  const habitId = event.target.dataset.habitId
+  const done = event.target.checked
 
-  for (const habit of habits) {
-    if (habit.key === 'calve_exercises' && isCalveWaived(dateKey)) continue
-    const input = document.getElementById(`habit-${habit.key}`)
-    if (input) payload[habit.key] = input.checked
+  if (!currentUserId) {
+    alert('Kon niet opslaan. Ben je ingelogd?')
+    await loadData()
+    return
   }
 
-  let row = payload
-  let onConflict = 'habit_date'
-
-  // *_dev tables use unique (user_id, habit_date); production still uses habit_date.
-  if (isLocal) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      alert('Kon niet opslaan. Ben je ingelogd?')
-      await loadData()
-      return
-    }
-    row = { ...payload, user_id: user.id }
-    onConflict = 'user_id,habit_date'
-  }
-
-  const { data, error } = await supabase
-    .from(TABLE)
-    .upsert(row, { onConflict })
-    .select()
-    .single()
+  const { error } = await upsertLog({
+    userId: currentUserId,
+    habitId,
+    habitDate: dateKey,
+    done,
+  })
 
   if (error) {
     console.error(error)
@@ -280,7 +214,7 @@ async function onHabitToggle() {
     return
   }
 
-  rowsByDate.set(dateKey, data)
+  setDoneLocal(dateKey, habitId, done)
   renderGrid()
 }
 
@@ -292,8 +226,7 @@ function setGreyCell(td) {
 }
 
 function setPercentCell(td, dateKey) {
-  const row = getRowForDate(dateKey)
-  const pct = completionPercent(row, dateKey)
+  const pct = completionPercent(dateKey)
   const style = cellStyle(pct)
   td.className = 'habits-cell'
   td.textContent = `${pct}%`
@@ -308,8 +241,16 @@ function isInTrackingRange(dateKey) {
   return Boolean(trackingStart) && dateKey >= trackingStart && dateKey <= todayKey
 }
 
-function earliestHabitDate() {
-  const dates = [...rowsByDate.keys()].sort()
+function earliestTrackingDate() {
+  const dates = []
+  for (const habit of habitDefs) {
+    const start = dateOnly(habit.starts_on)
+    if (start) dates.push(start)
+  }
+  for (const dateKey of logsByDate.keys()) {
+    dates.push(dateKey)
+  }
+  dates.sort()
   return dates[0] ?? todayKey
 }
 
@@ -348,29 +289,26 @@ function renderGrid() {
   }
 }
 
-function indexRows(data) {
-  rowsByDate = new Map()
-  for (const row of data) {
-    rowsByDate.set(normalizeHabitDate(row.habit_date), row)
+function indexLogs(rows) {
+  logsByDate = new Map()
+  for (const row of rows) {
+    const dateKey = dateOnly(row.habit_date)
+    if (!logsByDate.has(dateKey)) logsByDate.set(dateKey, new Map())
+    logsByDate.get(dateKey).set(row.habit_id, Boolean(row.done))
   }
 }
 
 async function loadData() {
   todayKey = toLocalDateKey(getTodayDate())
   yesterdayKey = addDaysToKey(todayKey, -1)
-  if (editingYesterday && !canEditYesterday()) {
-    editingYesterday = false
-  }
 
-  const [habitsResult, runsResult] = await Promise.all([
-    supabase
-      .from(TABLE)
-      .select('*')
-      .lte('habit_date', todayKey)
-      .order('habit_date', { ascending: true }),
-    supabase
-      .from(RUN_TABLE)
-      .select('created_at'),
+  const { data: { user } } = await supabase.auth.getUser()
+  currentUserId = user?.id ?? null
+
+  const [habitsResult, logsResult, runsResult] = await Promise.all([
+    loadHabits(),
+    loadLogs(),
+    supabase.from(RUN_TABLE).select('created_at'),
   ])
 
   if (habitsResult.error) {
@@ -381,14 +319,20 @@ async function loadData() {
     return
   }
 
+  if (logsResult.error) {
+    console.error(logsResult.error)
+    return
+  }
+
   if (runsResult.error) {
     console.error(runsResult.error)
   } else {
     calveWaivedDates = buildCalveWaivedDates(runsResult.data ?? [])
   }
 
-  indexRows(habitsResult.data ?? [])
-  trackingStart = earliestHabitDate()
+  habitDefs = habitsResult.data
+  indexLogs(logsResult.data)
+  trackingStart = earliestTrackingDate()
   if (editingYesterday && !canEditYesterday()) {
     editingYesterday = false
   }
