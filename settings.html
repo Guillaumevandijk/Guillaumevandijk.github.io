@@ -4,25 +4,25 @@
   <link rel="apple-touch-icon" href="doh.jpeg">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI</title>
+  <title>Profiel</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body data-page="ai">
+<body data-page="settings">
 
   <section id="appSection" class="app-section" hidden>
     <header class="app-header">
-      <h1>Chat met AI</h1>
+      <h1>Profiel</h1>
       <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
     </header>
 
-    <div class="input-row">
-      <input id="chatInput" placeholder="Stel een vraag..." />
-      <button type="button" id="sendBtn">Verstuur</button>
-    </div>
-    <div id="chatOutput" class="chat-output"></div>
+    <section class="settings-block">
+      <h2>Pagina's</h2>
+      <p class="settings-hint">Kies welke onderdelen jij gebruikt. Home blijft altijd zichtbaar.</p>
+      <ul id="pagesList" class="settings-pages"></ul>
+    </section>
   </section>
 
-  <script type="module" src="js/ai.js"></script>
+  <script type="module" src="js/settings.js"></script>
 
 </body>
 </html>

@@ -1,14 +1,64 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
+  <link rel="apple-touch-icon" href="doh.jpeg">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="0; url=weight.html">
-  <title>Redirect</title>
-  <link rel="canonical" href="weight.html">
-  <script>location.replace('weight.html')</script>
+  <title>Home</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <p><a href="weight.html">Door naar Gewicht</a></p>
+<body data-page="home">
+
+  <section id="appSection" class="app-section" hidden>
+    <header class="app-header">
+      <h1>Doelen</h1>
+      <div class="header-actions">
+        <button type="button" id="feedbackBtn" class="feedback-btn">Feedback</button>
+        <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
+      </div>
+    </header>
+
+    <form id="feedbackForm" class="feedback-form" hidden>
+      <textarea id="feedbackInput" rows="3" placeholder="Feedback voor de ontwikkelaar..."></textarea>
+      <button type="button" id="sendFeedbackBtn">Verstuur</button>
+    </form>
+
+    <section class="settings-block">
+      <div class="goals-heading">
+        <h2>Lange termijn</h2>
+        <div class="goals-actions">
+          <button type="button" id="changeGoalsBtn" class="forecast-toggle">Wijzigen</button>
+          <button type="button" id="saveGoalsBtn" class="forecast-toggle forecast-toggle--active" hidden>Opslaan</button>
+          <button type="button" id="cancelGoalsBtn" class="forecast-toggle" hidden>Annuleren</button>
+        </div>
+      </div>
+      <ol id="longGoals" class="goal-list"></ol>
+    </section>
+
+    <section class="settings-block">
+      <h2>Korte termijn</h2>
+      <ol id="shortGoals" class="goal-list"></ol>
+    </section>
+
+    <section class="settings-block">
+      <h2>Notities</h2>
+      <div class="input-row">
+        <input id="noteInput" type="text" placeholder="Notitie" />
+        <button type="button" id="addNoteBtn">Toevoegen</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Notitie</th>
+            <th>Wanneer</th>
+          </tr>
+        </thead>
+        <tbody id="notesTableBody"></tbody>
+      </table>
+    </section>
+  </section>
+
+  <script type="module" src="js/home.js"></script>
+
 </body>
 </html>

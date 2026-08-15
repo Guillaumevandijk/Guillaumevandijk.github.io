@@ -1,4 +1,4 @@
-import { supabase, getTable } from './supabase-client.js'
+import { supabase, getTable, isLocal } from './supabase-client.js'
 import { initAuth } from './auth.js'
 import { getTodayDate, onDevTodayChange } from './dev-today.js'
 
@@ -252,9 +252,24 @@ async function onHabitToggle() {
     if (input) payload[habit.key] = input.checked
   }
 
+  let row = payload
+  let onConflict = 'habit_date'
+
+  // *_dev tables use unique (user_id, habit_date); production still uses habit_date.
+  if (isLocal) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      alert('Kon niet opslaan. Ben je ingelogd?')
+      await loadData()
+      return
+    }
+    row = { ...payload, user_id: user.id }
+    onConflict = 'user_id,habit_date'
+  }
+
   const { data, error } = await supabase
     .from(TABLE)
-    .upsert(payload, { onConflict: 'habit_date' })
+    .upsert(row, { onConflict })
     .select()
     .single()
 

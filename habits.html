@@ -7,26 +7,9 @@
   <title>Gewoontes</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-
-  <section id="loginSection" class="login-section">
-    <h1>Inloggen</h1>
-    <form id="loginForm" class="login-form">
-      <input id="loginEmail" type="email" placeholder="E-mail" autocomplete="username" required />
-      <input id="loginPassword" type="password" placeholder="Wachtwoord" autocomplete="current-password" required />
-      <button type="submit">Inloggen</button>
-    </form>
-    <p id="loginError" class="login-error" hidden></p>
-  </section>
+<body data-page="habits">
 
   <section id="appSection" class="app-section" hidden>
-    <nav class="top-nav">
-      <a href="weight.html">Gewicht</a>
-      <a href="run.html">Hardlopen</a>
-      <a href="ai.html">AI</a>
-      <a href="habits.html" class="active">Gewoontes</a>
-    </nav>
-
     <header class="app-header app-header--habits">
       <h1>Gewoontes</h1>
       <button type="button" id="yesterdayToggle" class="yesterday-toggle" aria-pressed="false">

@@ -1,12 +1,14 @@
 import { supabase } from './supabase-client.js'
-
-
+import { loadOrCreateProfile, applyNav, redirectIfPageDisabled } from './profile.js'
+import { renderShell } from './layout.js'
 
 /**
- * Shared login UI for weight.html, run.html, ai.html, and habits.html.
- * @param {{ onAuthenticated: () => void }} options — called when user is logged in
+ * Shared login UI and nav for every page.
+ * @param {{ onAuthenticated: (profile?: object | null) => void }} options — called when user is logged in
  */
 export async function initAuth({ onAuthenticated }) {
+  renderShell()
+
   const loginSection = document.getElementById('loginSection')
   const appSection = document.getElementById('appSection')
   const loginForm = document.getElementById('loginForm')
@@ -50,6 +52,14 @@ export async function initAuth({ onAuthenticated }) {
     showLogin()
   }
 
+  async function afterLogin() {
+    showApp()
+    const profile = await loadOrCreateProfile()
+    applyNav(profile)
+    redirectIfPageDisabled(profile)
+    onAuthenticated(profile)
+  }
+
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     const email = document.getElementById('loginEmail').value.trim()
@@ -60,22 +70,13 @@ export async function initAuth({ onAuthenticated }) {
   const logoutBtn = document.getElementById('logoutBtn')
   if (logoutBtn) logoutBtn.addEventListener('click', signOut)
 
-  supabase.auth.onAuthStateChange((_event, session) => {
-    if (session) {
-      showApp()
-      onAuthenticated()
-    } else {
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (session && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) {
+      afterLogin()
+    } else if (!session) {
       showLogin()
     }
   })
-
-  const { data: { session } } = await supabase.auth.getSession()
-  if (session) {
-    showApp()
-    onAuthenticated()
-  } else {
-    showLogin()
-  }
 
   return { showLogin, handleAuthError, signOut }
 }
