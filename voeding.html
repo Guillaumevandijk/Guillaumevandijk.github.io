@@ -32,15 +32,17 @@
 
     <section class="cheat-meals">
       <h2 class="sport-run-heading">Cheat maal</h2>
-      <div class="input-row">
-        <input id="cheatMealInput" type="text" placeholder="Omschrijving, bijv. pizza margherita" />
+      <div class="cheat-meal-form">
+        <input id="cheatMealItems" type="text" placeholder="Item(s), bijv. pizza margherita" />
+        <input id="cheatMealNote" type="text" placeholder="Omschrijving (optioneel)" />
         <button type="button" id="addCheatMealBtn">Toevoegen</button>
       </div>
       <p id="cheatMealStatus" class="settings-hint" hidden></p>
       <table>
         <thead>
           <tr>
-            <th>Gegeten</th>
+            <th>Gegeten<br>of gedronken</th>
+            <th>Item(s)</th>
             <th>Omschrijving</th>
             <th>kcal</th>
           </tr>

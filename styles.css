@@ -937,3 +937,10 @@ button.sport-chip {
 .cheat-meals {
   margin-top: 32px;
 }
+
+.cheat-meal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}

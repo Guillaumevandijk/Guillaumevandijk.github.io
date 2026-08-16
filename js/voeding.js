@@ -140,12 +140,14 @@ function renderCheatMeals() {
   for (const item of cheatMeals) {
     const row = document.createElement('tr')
     const eaten = document.createElement('td')
+    const items = document.createElement('td')
     const description = document.createElement('td')
     const calories = document.createElement('td')
     eaten.textContent = new Date(item.eaten_at).toLocaleString()
-    description.textContent = item.description
+    items.textContent = item.items?.trim() || item.description || '—'
+    description.textContent = item.items ? (item.description?.trim() || '—') : '—'
     calories.textContent = `${item.calories}`
-    row.append(eaten, description, calories)
+    row.append(eaten, items, description, calories)
     tableBody.appendChild(row)
   }
 }
@@ -173,9 +175,13 @@ function parseCalories(text) {
   return value
 }
 
-async function estimateCalories(description) {
+async function estimateCalories(items, note) {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('Niet ingelogd')
+
+  const details = note
+    ? `Item(s): ${items}\nOmschrijving: ${note}`
+    : `Item(s): ${items}`
 
   const { data, error } = await supabase.functions.invoke('openai-private-proxy', {
     body: {
@@ -184,11 +190,11 @@ async function estimateCalories(description) {
         {
           role: 'system',
           content:
-            'Je schat hoeveel kilocalorieën een maaltijd of snack bevat. Antwoord alleen met één geheel getal, zonder eenheid of uitleg.',
+            'Je schat hoeveel kilocalorieën een maaltijd, snack of drank bevat. Gebruik de item(s) en, als die er is, de omschrijving. Antwoord alleen met één geheel getal, zonder eenheid of uitleg.',
         },
         {
           role: 'user',
-          content: `Schat het aantal kcal in deze cheat meal: ${description}`,
+          content: `Schat het aantal kcal in deze cheat meal:\n${details}`,
         },
       ],
     },
@@ -207,11 +213,13 @@ function setCheatStatus(text) {
 }
 
 async function addCheatMeal() {
-  const input = document.getElementById('cheatMealInput')
+  const itemsInput = document.getElementById('cheatMealItems')
+  const noteInput = document.getElementById('cheatMealNote')
   const button = document.getElementById('addCheatMealBtn')
-  const description = input.value.trim()
-  if (!description) {
-    alert('Vul een omschrijving in.')
+  const items = itemsInput.value.trim()
+  const note = noteInput.value.trim()
+  if (!items) {
+    alert('Vul de item(s) in.')
     return
   }
   if (!currentUserId) {
@@ -224,7 +232,7 @@ async function addCheatMeal() {
 
   let calories
   try {
-    calories = await estimateCalories(description)
+    calories = await estimateCalories(items, note)
   } catch (err) {
     console.error(err)
     button.disabled = false
@@ -237,7 +245,8 @@ async function addCheatMeal() {
     .from(CHEAT_TABLE)
     .insert({
       user_id: currentUserId,
-      description,
+      items,
+      description: note || null,
       calories,
       eaten_at: new Date().toISOString(),
     })
@@ -250,13 +259,20 @@ async function addCheatMeal() {
     return
   }
 
-  input.value = ''
+  itemsInput.value = ''
+  noteInput.value = ''
   setCheatStatus('')
   await loadCheatMeals()
 }
 
 document.getElementById('addCheatMealBtn').addEventListener('click', addCheatMeal)
-document.getElementById('cheatMealInput').addEventListener('keydown', event => {
+document.getElementById('cheatMealItems').addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    addCheatMeal()
+  }
+})
+document.getElementById('cheatMealNote').addEventListener('keydown', event => {
   if (event.key === 'Enter') {
     event.preventDefault()
     addCheatMeal()
