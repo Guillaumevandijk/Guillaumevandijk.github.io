@@ -311,6 +311,15 @@ function renderGrid(rows) {
   }
 }
 
+function formatRunWhen(createdAt) {
+  const date = new Date(createdAt)
+  const datePart = date.toLocaleDateString()
+  const isNoonPlaceholder =
+    date.getHours() === 12 && date.getMinutes() === 0 && date.getSeconds() === 0
+  if (isNoonPlaceholder) return `${datePart} -`
+  return date.toLocaleString()
+}
+
 function renderTable(rows) {
   const tableBody = document.getElementById('tableBody')
   tableBody.innerHTML = ''
@@ -321,7 +330,7 @@ function renderTable(rows) {
       <td>${Number(item.distance_km)} km</td>
       <td>${formatTempo(item.tempo_seconds)}</td>
       <td>${item.rating ?? '—'}</td>
-      <td>${new Date(item.created_at).toLocaleString()}</td>
+      <td>${formatRunWhen(item.created_at)}</td>
     `
     tableBody.appendChild(row)
   })

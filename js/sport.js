@@ -125,6 +125,14 @@ function parseTempoInput(value) {
   return minutes * 60 + seconds
 }
 
+function bindTempoInput(input) {
+  if (!input) return
+  input.addEventListener('input', () => {
+    const digits = input.value.replace(/\D/g, '').slice(0, 4)
+    input.value = digits.length <= 2 ? digits : `${digits.slice(0, -2)}:${digits.slice(-2)}`
+  })
+}
+
 function formatTempo(secondsPerKm) {
   if (secondsPerKm == null) return '—'
   const m = Math.floor(secondsPerKm / 60)
@@ -132,9 +140,12 @@ function formatTempo(secondsPerKm) {
   return `${m}:${String(s).padStart(2, '0')}/km`
 }
 
-function dateKeyToNoonIso(dateKey) {
-  const [y, m, d] = dateKey.split('-').map(Number)
-  return new Date(y, m - 1, d, 12, 0, 0).toISOString()
+function runStatCreatedAt(sessionDate) {
+  if (sessionDate < todayKey) {
+    const [y, m, d] = sessionDate.split('-').map(Number)
+    return new Date(y, m - 1, d, 12, 0, 0).toISOString()
+  }
+  return new Date().toISOString()
 }
 
 function applyChipStyle(el, type, done) {
@@ -465,7 +476,7 @@ function renderComplete(container) {
     </label>
     <label>
       Tempo (m:ss/km)
-      <input id="sportTempoInput" type="text" inputmode="numeric" placeholder="6:25" required />
+      <input id="sportTempoInput" type="text" inputmode="numeric" placeholder="5:30" required />
     </label>
     <label>
       Kuit (1–10)
@@ -495,6 +506,7 @@ function renderComplete(container) {
     const tempoInput = form.querySelector('#sportTempoInput')
     if (session?.distance_km != null) distanceInput.value = session.distance_km
     if (session?.tempo_seconds != null) tempoInput.value = formatTempo(session.tempo_seconds).replace('/km', '')
+    bindTempoInput(tempoInput)
   }
 
   form.addEventListener('submit', event => {
@@ -548,11 +560,12 @@ function renderEdit(container) {
       tempoInput.id = 'sportTempoInput'
       tempoInput.type = 'text'
       tempoInput.inputMode = 'numeric'
-      tempoInput.placeholder = '6:25'
+      tempoInput.placeholder = '5:30'
       tempoInput.required = true
       tempoInput.value = session.tempo_seconds != null
         ? formatTempo(session.tempo_seconds).replace('/km', '')
         : ''
+      bindTempoInput(tempoInput)
       tempoLabel.append('Tempo (m:ss/km)', tempoInput)
       form.appendChild(tempoLabel)
     }
@@ -730,15 +743,17 @@ function readCompleteFields(type) {
   return updates
 }
 
-async function insertRunStat({ distanceKm, tempoSeconds, rating, dateKey }) {
+async function insertRunStat({ distanceKm, tempoSeconds, rating, createdAt }) {
+  const row = {
+    distance_km: distanceKm,
+    tempo_seconds: tempoSeconds,
+    rating,
+  }
+  if (createdAt) row.created_at = createdAt
+
   const { error } = await supabase
     .from(getTable('run_stats'))
-    .insert({
-      distance_km: distanceKm,
-      tempo_seconds: tempoSeconds,
-      rating,
-      created_at: dateKeyToNoonIso(dateKey),
-    })
+    .insert(row)
 
   if (error) {
     console.error(error)
@@ -770,7 +785,7 @@ async function markDone() {
       distanceKm: fields.distance_km,
       tempoSeconds: fields.tempo_seconds,
       rating: fields.rating,
-      dateKey: editor.dateKey,
+      createdAt: runStatCreatedAt(editor.dateKey),
     })
     if (!ok) {
       replaceSession(data)
