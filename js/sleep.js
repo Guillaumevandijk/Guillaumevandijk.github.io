@@ -287,7 +287,6 @@ initAuth({
       page: 'sleep',
       container: 'habitsSection',
       heading: 'Dagelijks',
-      showGrid: false,
     })
   },
 })

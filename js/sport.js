@@ -1205,7 +1205,6 @@ initAuth({
       page: 'sport',
       container: 'habitsSection',
       heading: 'Dagelijks',
-      showGrid: false,
     })
   },
 })
