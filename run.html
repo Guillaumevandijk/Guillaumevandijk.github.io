@@ -6,59 +6,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hardlopen</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta http-equiv="refresh" content="0;url=sport.html">
+  <script>location.replace('sport.html')</script>
 </head>
-<body data-page="run">
-
-  <section id="appSection" class="app-section" hidden>
-    <header class="app-header">
-      <h1>Hardlopen</h1>
-      <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
-    </header>
-
-    <div class="chart-toolbar">
-      <button type="button" id="forecastToggle" class="forecast-toggle" aria-pressed="false">
-        Prognose 6 mnd
-      </button>
-      <p id="forecastSummary" class="forecast-summary" hidden></p>
-    </div>
-
-    <div class="chart-wrap">
-      <canvas id="runChart" aria-label="Grafiek van afstand per run"></canvas>
-    </div>
-
-    <div class="habits-grid-wrap">
-      <table class="habits-grid" aria-label="Weekoverzicht hardlopen">
-        <thead>
-          <tr>
-            <th scope="col"></th>
-            <th scope="col">Ma</th>
-            <th scope="col">Di</th>
-            <th scope="col">Wo</th>
-            <th scope="col">Do</th>
-            <th scope="col">Vr</th>
-            <th scope="col">Za</th>
-            <th scope="col">Zo</th>
-          </tr>
-        </thead>
-        <tbody id="runGridBody"></tbody>
-      </table>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Afstand</th>
-          <th>Tempo</th>
-          <th>Kuit</th>
-          <th>Wanneer</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-  </section>
-
-  <script type="module" src="js/run.js"></script>
-
-</body>
+<body></body>
 </html>

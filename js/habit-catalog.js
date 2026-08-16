@@ -1,5 +1,29 @@
 import { supabase, getTable } from './supabase-client.js'
 
+export const HABIT_PAGES = [
+  { key: 'voeding', label: 'Voeding' },
+  { key: 'sport', label: 'Beweging' },
+  { key: 'sleep', label: 'Slaap' },
+]
+
+export const FOOD_MACRO_HABITS = [
+  { name: 'Eiwitten', position: 0 },
+  { name: 'Vetten', position: 1 },
+  { name: 'Koolhydraten', position: 2 },
+  { name: 'Vochtintake', position: 3 },
+]
+
+export const NUTRITION_FIELDS = [
+  { key: 'calories', label: 'Calorie intake', suffix: 'kCal/dag', prefix: '±' },
+  { key: 'protein', label: 'Eiwitten', suffix: ' g/dag', prefix: '±' },
+  { key: 'fat', label: 'Vetten', suffix: ' g/dag', prefix: '±' },
+  { key: 'carbs', label: 'Koolhydraten', suffix: ' g/dag', prefix: '±' },
+  { key: 'fiber', label: 'Vezels', suffix: ' g/dag', prefix: '±' },
+  { key: 'water', label: 'Vochtintake', suffix: 'L', prefix: '' },
+  { key: 'supplements', label: 'Supplementen' },
+  { key: 'whey', label: 'Whey proteine' },
+]
+
 export function habitsTable() {
   return getTable('habits')
 }
@@ -62,7 +86,7 @@ export async function upsertLog({ userId, habitId, habitDate, done }) {
     .single()
 }
 
-export async function createHabit({ userId, name, kind, position, startsOn }) {
+export async function createHabit({ userId, name, kind, position, startsOn, page, mandatory = false }) {
   return supabase
     .from(habitsTable())
     .insert({
@@ -71,6 +95,8 @@ export async function createHabit({ userId, name, kind, position, startsOn }) {
       kind,
       position,
       starts_on: startsOn,
+      page,
+      mandatory,
     })
     .select()
     .single()
@@ -83,4 +109,41 @@ export async function updateHabit(id, updates) {
     .eq('id', id)
     .select()
     .single()
+}
+
+export async function deleteHabit(id) {
+  return supabase
+    .from(habitsTable())
+    .delete()
+    .eq('id', id)
+}
+
+export async function ensureFoodHabits(userId) {
+  const loaded = await loadHabits()
+  if (loaded.error) return loaded
+
+  const existing = loaded.data.filter(habit =>
+    habit.page === 'voeding'
+    && habit.mandatory
+    && (!habit.ends_on || dateOnly(habit.ends_on) > dateOnly(new Date()))
+  )
+  const missing = FOOD_MACRO_HABITS.filter(def =>
+    !existing.some(habit => habit.name.trim().toLowerCase() === def.name.toLowerCase())
+  )
+  if (missing.length === 0) return loaded
+
+  const { error } = await supabase
+    .from(habitsTable())
+    .insert(missing.map(def => ({
+      user_id: userId,
+      name: def.name,
+      position: def.position,
+      kind: 'normal',
+      page: 'voeding',
+      mandatory: true,
+      starts_on: dateOnly(new Date()),
+    })))
+
+  if (error) return { data: loaded.data, error }
+  return loadHabits()
 }

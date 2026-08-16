@@ -6,44 +6,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gewicht</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta http-equiv="refresh" content="0;url=sport.html">
+  <script>location.replace('sport.html')</script>
 </head>
-<body data-page="weight">
-
-  <section id="appSection" class="app-section" hidden>
-    <header class="app-header">
-      <h1>Mijn gewicht</h1>
-      <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
-    </header>
-
-    <div class="chart-toolbar">
-      <button type="button" id="forecastToggle" class="forecast-toggle" aria-pressed="false">
-        Prognose 6 mnd
-      </button>
-      <p id="forecastSummary" class="forecast-summary" hidden></p>
-    </div>
-
-    <div class="chart-wrap">
-      <canvas id="weightChart" aria-label="Grafiek van gewicht over tijd"></canvas>
-    </div>
-
-    <div class="input-row">
-      <input id="weightInput" type="number" step="0.1" min="0" placeholder="Gewicht (kg)" />
-      <button type="button" id="addWeightBtn">Toevoegen</button>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Gewicht</th>
-          <th>Wanneer</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-  </section>
-
-  <script type="module" src="js/weight.js"></script>
-
-</body>
+<body></body>
 </html>

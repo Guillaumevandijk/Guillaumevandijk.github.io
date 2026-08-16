@@ -25,11 +25,13 @@
     <section id="habitsEditor" class="settings-block" hidden>
       <details class="settings-fold">
         <summary>Gewoontes</summary>
-        <p class="settings-hint">Namen en aantal gewoontes die jij bijhoudt. Stoppen bewaart ze onder Oude gewoontes, zodat je ze later weer kunt toevoegen.</p>
+        <p class="settings-hint">Gewoontes horen bij Voeding, Beweging of Slaap. Voeding heeft vaste macros (eiwitten, vetten, koolhydraten, vochtintake).</p>
         <ul id="habitDefsList" class="habit-defs"></ul>
+        <h3 class="settings-subheading">Nieuwe gewoonte</h3>
         <form id="addHabitForm" class="settings-goal-form">
           <input id="newHabitName" type="text" placeholder="Nieuwe gewoonte" required />
-          <label class="habit-def-skip">
+          <select id="newHabitPage" aria-label="Pagina" required></select>
+          <label class="habit-def-skip" id="newHabitSkipWrap">
             <input id="newHabitSkipRun" type="checkbox" />
             Vrij op hardloopdag en de dag erna
           </label>

@@ -1,5 +1,5 @@
 import { supabase, getTable } from './supabase-client.js'
-import { PAGES, ALWAYS_VISIBLE, getCachedEnabledPages } from './profile.js'
+import { PAGES, ALWAYS_VISIBLE, NESTED_PAGES, getCachedEnabledPages, isPageEnabled } from './profile.js'
 
 const NAV_ITEMS = [
   { key: 'home', href: 'index.html', label: 'Home' },
@@ -29,16 +29,16 @@ function navBar(currentPage) {
   const nav = document.createElement('nav')
   nav.className = 'top-nav'
   const cached = getCachedEnabledPages()
-  const enabled = new Set(cached ?? [])
 
   for (const item of NAV_ITEMS) {
+    if (NESTED_PAGES.has(item.key)) continue
     const link = document.createElement('a')
     link.href = item.href
     link.dataset.page = item.key
     link.textContent = item.label
     if (item.key === currentPage) link.classList.add('active')
     if (!ALWAYS_VISIBLE.has(item.key)) {
-      link.hidden = cached ? !enabled.has(item.key) : true
+      link.hidden = cached ? !isPageEnabled(item.key, cached) : true
     }
     nav.appendChild(link)
   }

@@ -6,6 +6,8 @@ import {
   loadHabits,
   createHabit,
   updateHabit,
+  deleteHabit,
+  HABIT_PAGES,
 } from './habit-catalog.js'
 import {
   SPORT_COLORS,
@@ -52,7 +54,13 @@ function pagesEnabled() {
 }
 
 function habitsPageOn() {
-  return pagesEnabled().has('habits')
+  const enabled = pagesEnabled()
+  return HABIT_PAGES.some(page => enabled.has(page.key))
+}
+
+function enabledHabitPages() {
+  const enabled = pagesEnabled()
+  return HABIT_PAGES.filter(page => enabled.has(page.key))
 }
 
 function sportPageOn() {
@@ -75,7 +83,14 @@ function renderPages() {
     input.type = 'checkbox'
     input.dataset.page = page.key
     input.checked = enabled.has(page.key)
-    label.append(input, document.createTextNode(` ${page.label}`))
+    label.append(
+      input,
+      document.createTextNode(
+        page.key === 'run' || page.key === 'weight'
+          ? ` ${page.label} (op sport pagina)`
+          : ` ${page.label}`
+      )
+    )
     li.appendChild(label)
     list.appendChild(li)
   }
@@ -100,60 +115,156 @@ function stoppedHabits() {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
+function habitPageKey(habit) {
+  return habit.page ?? 'sport'
+}
+
+function fillNewHabitPageSelect() {
+  const select = document.getElementById('newHabitPage')
+  if (!select) return
+  const current = select.value
+  select.innerHTML = ''
+  for (const page of enabledHabitPages()) {
+    const option = document.createElement('option')
+    option.value = page.key
+    option.textContent = page.label
+    select.appendChild(option)
+  }
+  if ([...select.options].some(option => option.value === current)) {
+    select.value = current
+  }
+  syncNewHabitSkip()
+}
+
+function syncNewHabitSkip() {
+  const wrap = document.getElementById('newHabitSkipWrap')
+  const skip = document.getElementById('newHabitSkipRun')
+  if (!wrap) return
+  const isSport = document.getElementById('newHabitPage')?.value === 'sport'
+  wrap.hidden = !isSport
+  if (!isSport && skip) skip.checked = false
+}
+
 function renderActiveHabits() {
   const list = document.getElementById('habitDefsList')
   list.innerHTML = ''
+  const pages = enabledHabitPages()
   const items = activeHabits()
 
-  if (items.length === 0) {
+  if (pages.length === 0) {
     const empty = document.createElement('li')
     empty.className = 'settings-empty'
-    empty.textContent = 'Nog geen gewoontes. Voeg er hieronder een toe, of kies een oude.'
+    empty.textContent = 'Zet Voeding, Beweging of Slaap aan om gewoontes toe te voegen.'
     list.appendChild(empty)
     return
   }
 
-  items.forEach(habit => {
-    const li = document.createElement('li')
-    li.className = 'habit-def'
+  let shown = 0
+  for (const page of pages) {
+    const groupItems = items.filter(habit => habitPageKey(habit) === page.key)
+    const heading = document.createElement('li')
+    heading.className = 'habit-def-group'
+    heading.textContent = page.label
+    list.appendChild(heading)
 
-    const nameInput = document.createElement('input')
-    nameInput.type = 'text'
-    nameInput.value = habit.name
-    nameInput.setAttribute('aria-label', 'Naam')
-    nameInput.addEventListener('change', async () => {
-      const name = nameInput.value.trim()
-      if (!name) {
-        nameInput.value = habit.name
-        return
-      }
-      const { data, error } = await updateHabit(habit.id, { name })
+    if (groupItems.length === 0) {
+      const empty = document.createElement('li')
+      empty.className = 'settings-empty'
+      empty.textContent = page.key === 'voeding'
+        ? 'Vaste macros staan klaar zodra je Voeding opent.'
+        : 'Nog geen gewoontes op deze pagina.'
+      list.appendChild(empty)
+      continue
+    }
+
+    groupItems.forEach(habit => {
+      shown += 1
+      list.appendChild(habitEditorRow(habit, pages))
+    })
+  }
+
+  if (shown === 0 && items.length === 0) {
+    return
+  }
+}
+
+function habitEditorRow(habit, pages) {
+  const li = document.createElement('li')
+  li.className = 'habit-def'
+
+  const nameInput = document.createElement('input')
+  nameInput.type = 'text'
+  nameInput.value = habit.name
+  nameInput.setAttribute('aria-label', 'Naam')
+  nameInput.disabled = Boolean(habit.mandatory)
+  nameInput.addEventListener('change', async () => {
+    const name = nameInput.value.trim()
+    if (!name) {
+      nameInput.value = habit.name
+      return
+    }
+    const { data, error } = await updateHabit(habit.id, { name })
+    if (error) {
+      console.error(error)
+      alert('Kon naam niet opslaan.')
+      nameInput.value = habit.name
+      return
+    }
+    Object.assign(habit, data)
+  })
+  li.appendChild(nameInput)
+
+  if (habit.mandatory) {
+    const lock = document.createElement('span')
+    lock.className = 'habit-def-lock'
+    lock.textContent = 'Vast'
+    li.appendChild(lock)
+  } else {
+    const pageSelect = document.createElement('select')
+    pageSelect.setAttribute('aria-label', 'Pagina')
+    for (const page of pages) {
+      const option = document.createElement('option')
+      option.value = page.key
+      option.textContent = page.label
+      option.selected = habitPageKey(habit) === page.key
+      pageSelect.appendChild(option)
+    }
+    pageSelect.addEventListener('change', async () => {
+      const page = pageSelect.value
+      const updates = { page }
+      if (page !== 'sport' && habit.kind === 'skip_after_run') updates.kind = 'normal'
+      const { data, error } = await updateHabit(habit.id, updates)
       if (error) {
         console.error(error)
-        alert('Kon naam niet opslaan.')
-        nameInput.value = habit.name
+        alert('Kon pagina niet opslaan.')
+        pageSelect.value = habitPageKey(habit)
         return
       }
       Object.assign(habit, data)
+      renderHabitsEditor()
     })
+    li.appendChild(pageSelect)
 
-    const skipLabel = document.createElement('label')
-    skipLabel.className = 'habit-def-skip'
-    const skip = document.createElement('input')
-    skip.type = 'checkbox'
-    skip.checked = habit.kind === 'skip_after_run'
-    skip.addEventListener('change', async () => {
-      const kind = skip.checked ? 'skip_after_run' : 'normal'
-      const { data, error } = await updateHabit(habit.id, { kind })
-      if (error) {
-        console.error(error)
-        alert('Kon niet opslaan.')
-        skip.checked = habit.kind === 'skip_after_run'
-        return
-      }
-      Object.assign(habit, data)
-    })
-    skipLabel.append(skip, document.createTextNode(' Vrij na hardlopen'))
+    if (habitPageKey(habit) === 'sport') {
+      const skipLabel = document.createElement('label')
+      skipLabel.className = 'habit-def-skip'
+      const skip = document.createElement('input')
+      skip.type = 'checkbox'
+      skip.checked = habit.kind === 'skip_after_run'
+      skip.addEventListener('change', async () => {
+        const kind = skip.checked ? 'skip_after_run' : 'normal'
+        const { data, error } = await updateHabit(habit.id, { kind })
+        if (error) {
+          console.error(error)
+          alert('Kon niet opslaan.')
+          skip.checked = habit.kind === 'skip_after_run'
+          return
+        }
+        Object.assign(habit, data)
+      })
+      skipLabel.append(skip, document.createTextNode(' Vrij na hardlopen'))
+      li.appendChild(skipLabel)
+    }
 
     const stop = document.createElement('button')
     stop.type = 'button'
@@ -169,10 +280,10 @@ function renderActiveHabits() {
       habit.ends_on = todayKey()
       renderHabitsEditor()
     })
+    li.appendChild(stop)
+  }
 
-    li.append(nameInput, skipLabel, stop)
-    list.appendChild(li)
-  })
+  return li
 }
 
 function renderOldHabits() {
@@ -188,7 +299,8 @@ function renderOldHabits() {
 
     const name = document.createElement('span')
     name.className = 'habit-def-name'
-    name.textContent = habit.name
+    const pageLabel = HABIT_PAGES.find(page => page.key === habitPageKey(habit))?.label
+    name.textContent = pageLabel ? `${habit.name} (${pageLabel})` : habit.name
 
     const restore = document.createElement('button')
     restore.type = 'button'
@@ -196,7 +308,13 @@ function renderOldHabits() {
     restore.textContent = 'Opnieuw'
     restore.addEventListener('click', () => restoreHabit(habit))
 
-    li.append(name, restore)
+    const remove = document.createElement('button')
+    remove.type = 'button'
+    remove.className = 'settings-delete'
+    remove.textContent = 'Verwijderen'
+    remove.addEventListener('click', () => removeOldHabit(habit))
+
+    li.append(name, restore, remove)
     list.appendChild(li)
   }
 }
@@ -206,6 +324,7 @@ function renderHabitsEditor() {
   section.hidden = !habitsPageOn()
   if (section.hidden) return
 
+  fillNewHabitPageSelect()
   renderActiveHabits()
   renderOldHabits()
 }
@@ -223,6 +342,20 @@ async function restoreHabit(habit) {
     return
   }
   Object.assign(habit, data)
+  renderHabitsEditor()
+}
+
+async function removeOldHabit(habit) {
+  if (!confirm(`Wil je “${habit.name}” definitief verwijderen? Alle vinkjes van deze gewoonte verdwijnen ook.`)) {
+    return
+  }
+  const { error } = await deleteHabit(habit.id)
+  if (error) {
+    console.error(error)
+    alert('Kon gewoonte niet verwijderen.')
+    return
+  }
+  habitDefs = habitDefs.filter(item => item.id !== habit.id)
   renderHabitsEditor()
 }
 
@@ -357,10 +490,16 @@ async function onAddHabit(event) {
   const name = nameInput.value.trim()
   if (!name) return
 
-  const kind = document.getElementById('newHabitSkipRun').checked
+  const page = document.getElementById('newHabitPage')?.value
+  if (!enabledHabitPages().some(item => item.key === page)) {
+    alert('Kies Voeding, Beweging of Slaap.')
+    return
+  }
+
+  const kind = page === 'sport' && document.getElementById('newHabitSkipRun').checked
     ? 'skip_after_run'
     : 'normal'
-  const items = activeHabits()
+  const items = activeHabits().filter(habit => habitPageKey(habit) === page)
   const position = items.length ? Math.max(...items.map(h => h.position)) + 1 : 0
 
   const { data, error } = await createHabit({
@@ -369,6 +508,7 @@ async function onAddHabit(event) {
     kind,
     position,
     startsOn: todayKey(),
+    page,
   })
 
   if (error) {
@@ -432,4 +572,5 @@ initAuth({
 
 document.getElementById('pagesList').addEventListener('change', onPagesChange)
 document.getElementById('addHabitForm').addEventListener('submit', onAddHabit)
+document.getElementById('newHabitPage')?.addEventListener('change', syncNewHabitSkip)
 document.getElementById('addSportForm').addEventListener('submit', onAddSport)

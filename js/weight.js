@@ -1,7 +1,6 @@
 import Chart from 'https://esm.sh/chart.js/auto'
 import 'https://esm.sh/chartjs-adapter-date-fns'
 import { supabase, getTable } from './supabase-client.js'
-import { initAuth } from './auth.js'
 
 const TABLE = getTable('weight')
 const FORECAST_MONTHS = 6
@@ -9,6 +8,7 @@ const FORECAST_MONTHS = 6
 let weightChart = null
 let weightRows = []
 let showForecast = false
+let sectionBound = false
 
 function addMonths(timestamp, months) {
   const d = new Date(timestamp)
@@ -56,8 +56,8 @@ function buildPoints(sorted) {
 }
 
 function updateForecastUi(points, trend, forecastEndX) {
-  const btn = document.getElementById('forecastToggle')
-  const summary = document.getElementById('forecastSummary')
+  const btn = document.getElementById('weightForecastToggle')
+  const summary = document.getElementById('weightForecastSummary')
 
   if (btn) {
     btn.disabled = points.length < 2
@@ -81,6 +81,7 @@ function updateForecastUi(points, trend, forecastEndX) {
 function renderChart(rows) {
   weightRows = rows ?? []
   const canvas = document.getElementById('weightChart')
+  if (!canvas) return
   const sorted = [...weightRows].sort(
     (a, b) => new Date(a.created_at) - new Date(b.created_at)
   )
@@ -166,6 +167,21 @@ function renderChart(rows) {
   })
 }
 
+function renderTable(rows) {
+  const tableBody = document.getElementById('weightTableBody')
+  if (!tableBody) return
+  tableBody.innerHTML = ''
+
+  for (const item of rows ?? []) {
+    const row = document.createElement('tr')
+    row.innerHTML = `
+      <td>${Number(item.weight)} kg</td>
+      <td>${new Date(item.created_at).toLocaleString()}</td>
+    `
+    tableBody.appendChild(row)
+  }
+}
+
 async function loadData() {
   const { data, error } = await supabase
     .from(TABLE)
@@ -180,19 +196,9 @@ async function loadData() {
     return
   }
 
-  renderChart(data)
-
-  const tableBody = document.getElementById('tableBody')
-  tableBody.innerHTML = ''
-
-  data.forEach(item => {
-    const row = document.createElement('tr')
-    row.innerHTML = `
-      <td>${Number(item.weight)} kg</td>
-      <td>${new Date(item.created_at).toLocaleString()}</td>
-    `
-    tableBody.appendChild(row)
-  })
+  const rows = data ?? []
+  renderChart(rows)
+  renderTable(rows)
 }
 
 async function addWeight() {
@@ -215,18 +221,28 @@ async function addWeight() {
   }
 
   input.value = ''
-  loadData()
+  await loadData()
 }
 
-document.getElementById('addWeightBtn').addEventListener('click', addWeight)
+function bindWeightSection() {
+  if (sectionBound) return
+  sectionBound = true
 
-document.getElementById('forecastToggle')?.addEventListener('click', () => {
-  const points = buildPoints(
-    [...weightRows].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-  )
-  if (points.length < 2) return
-  showForecast = !showForecast
-  renderChart(weightRows)
-})
+  document.getElementById('addWeightBtn')?.addEventListener('click', addWeight)
+  document.getElementById('weightForecastToggle')?.addEventListener('click', () => {
+    const points = buildPoints(
+      [...weightRows].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    )
+    if (points.length < 2) return
+    showForecast = !showForecast
+    renderChart(weightRows)
+  })
+}
 
-initAuth({ onAuthenticated: loadData })
+export async function loadWeightSection() {
+  const section = document.getElementById('weightSection')
+  if (section?.hidden) return
+  if (!document.getElementById('weightChart')) return
+  bindWeightSection()
+  await loadData()
+}

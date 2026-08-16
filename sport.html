@@ -5,14 +5,14 @@
   <link rel="apple-touch-icon" href="fitcamp_2026.jpg">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sport</title>
+  <title>Beweging</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body data-page="sport">
 
   <section id="appSection" class="app-section" hidden>
     <header class="app-header">
-      <h1>Sport</h1>
+      <h1>Beweging</h1>
       <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
     </header>
 
@@ -64,11 +64,56 @@
       </table>
     </div>
 
+    <section id="habitsSection"></section>
+
+    <section id="runSection" hidden>
+      <h2 class="sport-run-heading">Hardlopen</h2>
+      <div class="chart-toolbar">
+        <button type="button" id="forecastToggle" class="forecast-toggle" aria-pressed="false">
+          Prognose 6 mnd
+        </button>
+        <p id="forecastSummary" class="forecast-summary" hidden></p>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="runChart" aria-label="Grafiek van afstand per run"></canvas>
+      </div>
+    </section>
+
+    <section id="weightSection" hidden>
+      <h2 class="sport-run-heading">Gewicht</h2>
+      <div class="chart-toolbar">
+        <button type="button" id="weightForecastToggle" class="forecast-toggle" aria-pressed="false">
+          Prognose 6 mnd
+        </button>
+        <p id="weightForecastSummary" class="forecast-summary" hidden></p>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="weightChart" aria-label="Grafiek van gewicht over tijd"></canvas>
+      </div>
+      <div class="input-row">
+        <input id="weightInput" type="number" step="0.1" min="0" placeholder="Gewicht (kg)" />
+        <button type="button" id="addWeightBtn">Toevoegen</button>
+      </div>
+      <details class="settings-fold">
+        <summary>Tabel</summary>
+        <table>
+          <thead>
+            <tr>
+              <th>Gewicht</th>
+              <th>Wanneer</th>
+            </tr>
+          </thead>
+          <tbody id="weightTableBody"></tbody>
+        </table>
+      </details>
+    </section>
+
     <table>
       <thead>
         <tr>
           <th>Wanneer</th>
           <th>Sport</th>
+          <th data-run-col>Training</th>
           <th>Cijfer</th>
           <th data-run-col>Afstand</th>
           <th data-run-col>Tempo</th>

@@ -2,6 +2,7 @@ import { supabase, getTable } from './supabase-client.js'
 import { initAuth } from './auth.js'
 import { getCachedEnabledPages } from './profile.js'
 import { getTodayDate, onDevTodayChange } from './dev-today.js'
+import { mountHabitsSection } from './habits-ui.js'
 import {
   dateOnly,
   ensureDefaultSports,
@@ -115,6 +116,10 @@ function isRunSport(type) {
   return type?.name.trim().toLowerCase() === 'hardlopen'
 }
 
+function trackRunDetails(type) {
+  return isRunSport(type) && runPageOn()
+}
+
 /** "6:25" → seconds per km. */
 function parseTempoInput(value) {
   const match = String(value ?? '').trim().match(/^(\d+):(\d{1,2})$/)
@@ -133,11 +138,135 @@ function bindTempoInput(input) {
   })
 }
 
+function formatClock(totalSeconds) {
+  if (totalSeconds == null) return ''
+  const m = Math.floor(totalSeconds / 60)
+  const s = Math.round(totalSeconds % 60)
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
 function formatTempo(secondsPerKm) {
   if (secondsPerKm == null) return '—'
-  const m = Math.floor(secondsPerKm / 60)
-  const s = Math.round(secondsPerKm % 60)
-  return `${m}:${String(s).padStart(2, '0')}/km`
+  return `${formatClock(secondsPerKm)}/km`
+}
+
+const RUN_KINDS = [
+  { value: 'duurloop', label: 'Duurloop' },
+  { value: 'herstelloop', label: 'Herstelloop' },
+  { value: 'loopje', label: 'Loopje' },
+  { value: 'interval', label: 'Interval' },
+]
+
+function runKindLabel(value) {
+  return RUN_KINDS.find(kind => kind.value === value)?.label ?? value
+}
+
+function formatRunKind(item) {
+  if (!item.run_kind) return '—'
+  if (item.run_kind !== 'interval') return runKindLabel(item.run_kind)
+
+  const parts = ['Interval']
+  const duration = item.interval_set_seconds != null
+    ? formatClock(item.interval_set_seconds)
+    : null
+  if (item.interval_sets != null && duration) {
+    parts.push(`${item.interval_sets}×${duration}`)
+  } else if (item.interval_sets != null) {
+    parts.push(`${item.interval_sets} sets`)
+  }
+  if (item.interval_tempo_seconds != null) {
+    parts.push(formatTempo(item.interval_tempo_seconds))
+  }
+  return parts.join(' · ')
+}
+
+function appendField(parent, labelText, attrs, labelClass) {
+  const label = document.createElement('label')
+  if (labelClass) label.className = labelClass
+  const input = document.createElement('input')
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === 'inputMode') input.inputMode = value
+    else input[key] = value
+  }
+  label.append(labelText, input)
+  parent.appendChild(label)
+  return input
+}
+
+function appendRunFields(form, session) {
+  const distanceInput = appendField(form, 'Afstand (km)', {
+    id: 'sportDistanceInput',
+    type: 'number',
+    step: '0.01',
+    min: '0',
+    required: true,
+  })
+  if (session?.distance_km != null) distanceInput.value = session.distance_km
+
+  const tempoInput = appendField(form, 'Tempo (m:ss/km)', {
+    id: 'sportTempoInput',
+    type: 'text',
+    inputMode: 'numeric',
+    placeholder: '5:30',
+    required: true,
+  })
+  if (session?.tempo_seconds != null) tempoInput.value = formatClock(session.tempo_seconds)
+  bindTempoInput(tempoInput)
+
+  const kindLabel = document.createElement('label')
+  const kindSelect = document.createElement('select')
+  kindSelect.id = 'sportRunKind'
+  kindSelect.required = true
+  const selected = session?.run_kind ?? 'duurloop'
+  for (const kind of RUN_KINDS) {
+    const option = document.createElement('option')
+    option.value = kind.value
+    option.textContent = kind.label
+    option.selected = kind.value === selected
+    kindSelect.appendChild(option)
+  }
+  kindLabel.append('Training', kindSelect)
+  form.appendChild(kindLabel)
+
+  const interval = document.createElement('div')
+  interval.id = 'sportIntervalFields'
+  interval.className = 'sport-interval-fields'
+  interval.hidden = selected !== 'interval'
+  kindSelect.addEventListener('change', () => {
+    interval.hidden = kindSelect.value !== 'interval'
+  })
+
+  const setsInput = appendField(interval, 'Aantal sets', {
+    id: 'sportIntervalSets',
+    type: 'number',
+    min: '1',
+    step: '1',
+  })
+  if (session?.interval_sets != null) setsInput.value = session.interval_sets
+
+  const setDurationInput = appendField(interval, 'Setduur (m:ss)', {
+    id: 'sportIntervalSetDuration',
+    type: 'text',
+    inputMode: 'numeric',
+    placeholder: '1:00',
+  })
+  if (session?.interval_set_seconds != null) {
+    setDurationInput.value = formatClock(session.interval_set_seconds)
+  }
+  bindTempoInput(setDurationInput)
+
+  const intervalTempoInput = appendField(interval, 'Intervaltempo (m:ss/km)', {
+    id: 'sportIntervalTempo',
+    type: 'text',
+    inputMode: 'numeric',
+    placeholder: '4:30',
+  })
+  if (session?.interval_tempo_seconds != null) {
+    intervalTempoInput.value = formatClock(session.interval_tempo_seconds)
+  }
+  bindTempoInput(intervalTempoInput)
+
+  form.appendChild(interval)
 }
 
 function runStatCreatedAt(sessionDate) {
@@ -163,6 +292,7 @@ function applyChipStyle(el, type, done) {
 
 function saveErrorMessage(error) {
   if (error?.code === '23505') return 'Die sport staat al op deze dag.'
+  if (error?.code === 'PGRST204') return 'Database is nog niet bijgewerkt. Voer de nieuwste sport-migratie uit.'
   return 'Kon niet opslaan. Ben je ingelogd?'
 }
 
@@ -458,7 +588,7 @@ function sportSelect(selectedId, dateKey) {
 function renderComplete(container) {
   const session = sessionById(editor.sessionId)
   const type = typeById(session?.sport_type_id)
-  const run = isRunSport(type)
+  const run = trackRunDetails(type)
   const intro = document.createElement('p')
   intro.className = 'settings-hint'
   intro.textContent = type
@@ -468,46 +598,23 @@ function renderComplete(container) {
 
   const form = document.createElement('form')
   form.className = 'sleep-fields sport-complete-form'
-  form.innerHTML = run
-    ? `
-    <label>
-      Afstand (km)
-      <input id="sportDistanceInput" type="number" step="0.01" min="0" required />
-    </label>
-    <label>
-      Tempo (m:ss/km)
-      <input id="sportTempoInput" type="text" inputmode="numeric" placeholder="5:30" required />
-    </label>
-    <label>
-      Kuit (1–10)
-      <input id="sportRatingInput" type="number" min="1" max="10" step="1" required />
-    </label>
-    <label class="sleep-note-label">
-      Notitie
-      <input id="sportNoteInput" type="text" placeholder="Optioneel" />
-    </label>
-  `
-    : `
-    <label>
-      Gevoel (1–10)
-      <input id="sportRatingInput" type="number" min="1" max="10" step="1" required />
-    </label>
-    <label class="sleep-note-label">
-      Notitie
-      <input id="sportNoteInput" type="text" placeholder="Optioneel" />
-    </label>
-  `
-  const ratingInput = form.querySelector('#sportRatingInput')
-  const noteInput = form.querySelector('#sportNoteInput')
+  if (run) appendRunFields(form, session)
+
+  const ratingInput = appendField(form, run ? 'Kuit (1–10)' : 'Gevoel (1–10)', {
+    id: 'sportRatingInput',
+    type: 'number',
+    min: '1',
+    max: '10',
+    step: '1',
+    required: true,
+  })
+  const noteInput = appendField(form, 'Notitie', {
+    id: 'sportNoteInput',
+    type: 'text',
+    placeholder: 'Optioneel',
+  }, 'sleep-note-label')
   if (session?.rating != null) ratingInput.value = session.rating
   if (session?.note) noteInput.value = session.note
-  if (run) {
-    const distanceInput = form.querySelector('#sportDistanceInput')
-    const tempoInput = form.querySelector('#sportTempoInput')
-    if (session?.distance_km != null) distanceInput.value = session.distance_km
-    if (session?.tempo_seconds != null) tempoInput.value = formatTempo(session.tempo_seconds).replace('/km', '')
-    bindTempoInput(tempoInput)
-  }
 
   form.addEventListener('submit', event => {
     event.preventDefault()
@@ -543,32 +650,7 @@ function renderEdit(container) {
 
   if (session.status === 'done') {
     const type = typeById(session.sport_type_id)
-    if (isRunSport(type)) {
-      const distanceLabel = document.createElement('label')
-      const distanceInput = document.createElement('input')
-      distanceInput.id = 'sportDistanceInput'
-      distanceInput.type = 'number'
-      distanceInput.step = '0.01'
-      distanceInput.min = '0'
-      distanceInput.required = true
-      distanceInput.value = session.distance_km ?? ''
-      distanceLabel.append('Afstand (km)', distanceInput)
-      form.appendChild(distanceLabel)
-
-      const tempoLabel = document.createElement('label')
-      const tempoInput = document.createElement('input')
-      tempoInput.id = 'sportTempoInput'
-      tempoInput.type = 'text'
-      tempoInput.inputMode = 'numeric'
-      tempoInput.placeholder = '5:30'
-      tempoInput.required = true
-      tempoInput.value = session.tempo_seconds != null
-        ? formatTempo(session.tempo_seconds).replace('/km', '')
-        : ''
-      bindTempoInput(tempoInput)
-      tempoLabel.append('Tempo (m:ss/km)', tempoInput)
-      form.appendChild(tempoLabel)
-    }
+    if (trackRunDetails(type)) appendRunFields(form, session)
 
     const ratingLabel = document.createElement('label')
     const ratingInput = document.createElement('input')
@@ -579,7 +661,7 @@ function renderEdit(container) {
     ratingInput.step = '1'
     ratingInput.required = true
     ratingInput.value = session.rating ?? ''
-    ratingLabel.append(isRunSport(type) ? 'Kuit (1–10)' : 'Gevoel (1–10)', ratingInput)
+    ratingLabel.append(trackRunDetails(type) ? 'Kuit (1–10)' : 'Gevoel (1–10)', ratingInput)
     form.appendChild(ratingLabel)
 
     const noteLabel = document.createElement('label')
@@ -645,6 +727,10 @@ function runPageOn() {
   return (enabledPages.length ? enabledPages : getCachedEnabledPages() ?? []).includes('run')
 }
 
+function weightPageOn() {
+  return (enabledPages.length ? enabledPages : getCachedEnabledPages() ?? []).includes('weight')
+}
+
 function renderDoneTable() {
   const tableBody = document.getElementById('sportDoneTableBody')
   tableBody.innerHTML = ''
@@ -667,8 +753,9 @@ function renderDoneTable() {
         month: 'short',
       }),
       type?.name ?? '—',
-      item.rating ?? '—',
     ]
+    if (showRun) cells.push(formatRunKind(item))
+    cells.push(item.rating ?? '—')
     if (showRun) {
       cells.push(
         item.distance_km != null ? `${Number(item.distance_km)} km` : '—',
@@ -685,11 +772,33 @@ function renderDoneTable() {
   }
 }
 
+function syncRunSection() {
+  const section = document.getElementById('runSection')
+  if (!section) return
+  const on = runPageOn()
+  section.hidden = !on
+  if (on) {
+    import('./run.js').then(mod => mod.loadRunSection())
+  }
+}
+
+function syncWeightSection() {
+  const section = document.getElementById('weightSection')
+  if (!section) return
+  const on = weightPageOn()
+  section.hidden = !on
+  if (on) {
+    import('./weight.js').then(mod => mod.loadWeightSection())
+  }
+}
+
 function renderAll() {
   renderPlanGrid()
   renderTemplateGrid()
   renderEditor()
   renderDoneTable()
+  syncRunSection()
+  syncWeightSection()
 }
 
 function replaceSession(row) {
@@ -718,14 +827,14 @@ async function addPlanned(sportTypeId) {
 function readCompleteFields(type) {
   const rating = parseInt(document.getElementById('sportRatingInput').value, 10)
   if (Number.isNaN(rating) || rating < 1 || rating > 10) {
-    alert(isRunSport(type) ? 'Kuit cijfer moet tussen 1 en 10 zijn.' : 'Gevoel moet tussen 1 en 10 zijn.')
+    alert(trackRunDetails(type) ? 'Kuit cijfer moet tussen 1 en 10 zijn.' : 'Gevoel moet tussen 1 en 10 zijn.')
     return null
   }
 
   const note = document.getElementById('sportNoteInput')?.value.trim() || null
   const updates = { rating, note }
 
-  if (isRunSport(type)) {
+  if (trackRunDetails(type)) {
     const distance = parseFloat(document.getElementById('sportDistanceInput').value.replace(',', '.'))
     const tempoSeconds = parseTempoInput(document.getElementById('sportTempoInput').value)
     if (Number.isNaN(distance) || distance <= 0) {
@@ -738,6 +847,38 @@ function readCompleteFields(type) {
     }
     updates.distance_km = distance
     updates.tempo_seconds = tempoSeconds
+
+    const kind = document.getElementById('sportRunKind')?.value
+    if (!RUN_KINDS.some(item => item.value === kind)) {
+      alert('Kies een training: duurloop, herstelloop, loopje of interval.')
+      return null
+    }
+    updates.run_kind = kind
+
+    if (kind === 'interval') {
+      const sets = parseInt(document.getElementById('sportIntervalSets').value, 10)
+      const setSeconds = parseTempoInput(document.getElementById('sportIntervalSetDuration').value)
+      const intervalTempo = parseTempoInput(document.getElementById('sportIntervalTempo').value)
+      if (Number.isNaN(sets) || sets < 1) {
+        alert('Voer het aantal sets in.')
+        return null
+      }
+      if (setSeconds == null || setSeconds <= 0) {
+        alert('Voer de setduur in als min:sec, bijv. 1:00')
+        return null
+      }
+      if (intervalTempo == null) {
+        alert('Voer het intervaltempo in als min:sec per km, bijv. 4:30')
+        return null
+      }
+      updates.interval_sets = sets
+      updates.interval_set_seconds = setSeconds
+      updates.interval_tempo_seconds = intervalTempo
+    } else {
+      updates.interval_sets = null
+      updates.interval_set_seconds = null
+      updates.interval_tempo_seconds = null
+    }
   }
 
   return updates
@@ -780,7 +921,7 @@ async function markDone() {
     return
   }
 
-  if (wasPlanned && isRunSport(type)) {
+  if (wasPlanned && trackRunDetails(type)) {
     const ok = await insertRunStat({
       distanceKm: fields.distance_km,
       tempoSeconds: fields.tempo_seconds,
@@ -1060,6 +1201,12 @@ initAuth({
     const { data: { user } } = await supabase.auth.getUser()
     currentUserId = user?.id ?? null
     await loadData()
+    await mountHabitsSection({
+      page: 'sport',
+      container: 'habitsSection',
+      heading: 'Dagelijks',
+      showGrid: false,
+    })
   },
 })
 

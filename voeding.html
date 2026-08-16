@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <link rel="icon" href="fitcamp_2026.jpg" type="image/jpeg">
+  <link rel="apple-touch-icon" href="fitcamp_2026.jpg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voeding</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="voeding">
+
+  <section id="appSection" class="app-section" hidden>
+    <header class="app-header">
+      <h1>Voeding</h1>
+      <button type="button" id="logoutBtn" class="logout-btn">Uitloggen</button>
+    </header>
+
+    <section class="settings-block nutrition-plan">
+      <div class="goals-heading">
+        <h2 id="nutritionTitle">Voedingsplan</h2>
+        <div class="goals-actions">
+          <button type="button" id="changePlanBtn" class="forecast-toggle">Wijzigen</button>
+          <button type="button" id="savePlanBtn" class="forecast-toggle forecast-toggle--active" hidden>Opslaan</button>
+          <button type="button" id="cancelPlanBtn" class="forecast-toggle" hidden>Annuleren</button>
+        </div>
+      </div>
+      <ul id="nutritionList" class="nutrition-list"></ul>
+    </section>
+
+    <section id="habitsSection"></section>
+
+    <section class="cheat-meals">
+      <h2 class="sport-run-heading">Cheat maal</h2>
+      <div class="input-row">
+        <input id="cheatMealInput" type="text" placeholder="Omschrijving, bijv. pizza margherita" />
+        <button type="button" id="addCheatMealBtn">Toevoegen</button>
+      </div>
+      <p id="cheatMealStatus" class="settings-hint" hidden></p>
+      <table>
+        <thead>
+          <tr>
+            <th>Gegeten</th>
+            <th>Omschrijving</th>
+            <th>kcal</th>
+          </tr>
+        </thead>
+        <tbody id="cheatMealTableBody"></tbody>
+      </table>
+    </section>
+  </section>
+
+  <script type="module" src="js/voeding.js"></script>
+
+</body>
+</html>

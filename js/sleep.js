@@ -1,6 +1,7 @@
 import { supabase, getTable } from './supabase-client.js'
 import { initAuth } from './auth.js'
 import { getTodayDate, onDevTodayChange } from './dev-today.js'
+import { mountHabitsSection } from './habits-ui.js'
 
 const TABLE = getTable('sleep_stats')
 const NIGHT_CUTOVER_HOUR = 18
@@ -212,6 +213,9 @@ function renderGrid(rows) {
         if (dateKey === nightStartKey) {
           td.classList.add('habits-cell--today')
         }
+        if (minutes != null && minutes < 7 * 60) {
+          td.classList.add('habits-cell--short-sleep')
+        }
       }
 
       tr.appendChild(td)
@@ -275,6 +279,18 @@ async function loadData() {
   renderTable(rows)
   fillNightForm()
 }
+
+initAuth({
+  onAuthenticated: async () => {
+    await loadData()
+    await mountHabitsSection({
+      page: 'sleep',
+      container: 'habitsSection',
+      heading: 'Dagelijks',
+      showGrid: false,
+    })
+  },
+})
 
 async function savePatch(patch) {
   if (fillingForm) return
@@ -355,8 +371,6 @@ document.getElementById('bedtimeInput').addEventListener('change', onBedtimeChan
 document.getElementById('wakeInput').addEventListener('change', onWakeChange)
 document.getElementById('ratingInput').addEventListener('change', onRatingChange)
 document.getElementById('noteInput').addEventListener('change', onNoteChange)
-
-initAuth({ onAuthenticated: loadData })
 
 onDevTodayChange(() => {
   const app = document.getElementById('appSection')

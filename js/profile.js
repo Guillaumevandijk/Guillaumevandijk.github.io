@@ -1,12 +1,12 @@
 import { supabase, getTable } from './supabase-client.js'
 
 export const PAGES = [
-  { key: 'weight', href: 'weight.html', label: 'Gewicht' },
-  { key: 'run', href: 'run.html', label: 'Hardlopen' },
-  { key: 'sport', href: 'sport.html', label: 'Sport' },
-  { key: 'sleep', href: 'sleep.html', label: 'Slaap en gevoel' },
+  { key: 'weight', href: 'sport.html', label: 'Gewicht' },
+  { key: 'run', href: 'sport.html', label: 'Hardlopen' },
+  { key: 'sport', href: 'sport.html', label: 'Beweging' },
+  { key: 'voeding', href: 'voeding.html', label: 'Voeding' },
+  { key: 'sleep', href: 'sleep.html', label: 'Slaap' },
   { key: 'ai', href: 'ai.html', label: 'AI' },
-  { key: 'habits', href: 'habits.html', label: 'Gewoontes' },
 ]
 
 export const LONG_GOAL_KEYS = ['long_goal_1', 'long_goal_2', 'long_goal_3']
@@ -14,6 +14,7 @@ export const SHORT_GOAL_KEYS = ['short_goal_1', 'short_goal_2', 'short_goal_3']
 
 const DEFAULT_PAGES = PAGES.map(page => page.key)
 export const ALWAYS_VISIBLE = new Set(['home', 'settings'])
+export const NESTED_PAGES = new Set(['run', 'weight', 'habits'])
 
 const ENABLED_PAGES_CACHE_KEY = 'enabled_pages'
 
@@ -90,15 +91,23 @@ export async function saveProfile(updates) {
   return { data, error }
 }
 
+export function isPageEnabled(key, enabledList) {
+  const enabled = enabledList ?? []
+  if (ALWAYS_VISIBLE.has(key)) return true
+  if (key === 'sport') {
+    return enabled.includes('sport') || enabled.includes('run') || enabled.includes('weight')
+  }
+  return enabled.includes(key)
+}
+
 export function applyNav(profile) {
   const enabledList = profile?.enabled_pages ?? getCachedEnabledPages() ?? DEFAULT_PAGES
   cacheEnabledPages(enabledList)
-  const enabled = new Set(enabledList)
 
   document.querySelectorAll('.top-nav a[data-page]').forEach(link => {
     const key = link.dataset.page
     if (ALWAYS_VISIBLE.has(key)) return
-    link.hidden = !enabled.has(key)
+    link.hidden = !isPageEnabled(key, enabledList)
   })
 }
 
@@ -109,7 +118,7 @@ export function redirectIfPageDisabled(profile) {
   if (!current || ALWAYS_VISIBLE.has(current)) return
 
   const enabled = profile.enabled_pages ?? DEFAULT_PAGES
-  if (enabled.includes(current)) return
+  if (isPageEnabled(current, enabled)) return
 
   location.replace('index.html')
 }
